@@ -13,7 +13,7 @@ zipline_logging= logbook.NestedSetup([logbook.NullHandler(level=logbook.DEBUG),l
 zipline_logging.push_application()
 
 from zipline import run_algorithm
-from zipline.api import order_target_percent, symbol, schedule_function, date_rules, get_open_orders, set_slippage, order
+from zipline.api import order_target_percent, symbol, schedule_function, date_rules, time_rules, set_slippage, order_target
 from zipline.finance.slippage import VolumeShareSlippage
 
 def initialize(context):
@@ -27,135 +27,104 @@ def initialize(context):
     end = datetime.datetime(2017,8,1)
     sec_list = SecurityList(tickers=tickers)
     sec_list.downloadQuandl(start,end)
-    ts,context.hedgeRatio,context.df_close = sec_list.genTimeSeries()
+    ts = sec_list.genTimeSeries()
+    context.adjDiv = sec_list.adjDividends()
+    context.adjHedge = sec_list.adjSplits()
+    context.divFactors = sec_list.getAdjFactors()
+    context.splits = sec_list.getSplits()
     context.avg = ts.mean()
     context.std = ts.std()
-    context.volume = sec_list.getVolume()
-    schedule_function(place_orders, date_rules.every_day())
-    
+    context.leverage = 1
+    context.share_num = 0
+    context.diff_thresh = 100
+    schedule_function(adjust_splits_dividends, date_rules.every_day(), time_rules.market_open())
+    schedule_function(place_orders, date_rules.every_day(), time_rules.market_open(hours=1, minutes=30))
+
+def adjust_splits_dividends(context,data):
+    splits = context.splits.loc[pd.to_datetime(context.get_datetime()).date()]
+    divFactors = context.divFactors.loc[pd.to_datetime(context.get_datetime()).date()]
+    context.adjHedge *= splits
+    context.adjDiv /= divFactors
+
 def place_orders(context,data): 
 
-    def adjustHedgeRatio(hedge):
-        """
-        Adjusts the HedgeRatio to account for slippage model (Volume Limit)
+    def calc_target_share_ratio(leverage):
+        shares = context.adjHedge*context.share_num
+        port_val = np.dot(np.absolute(shares),data.current(context.tickers,'price'))
+        diff = leverage*context.portfolio.portfolio_value - port_val
+        curr_vol = data.current(context.tickers,'volume')
+        max_vol = 0.025*curr_vol
+        while diff > context.diff_thresh and diff > 0 and (max_vol > shares).all():
+            context.share_num += 1*context.leverage
+            shares = context.adjHedge*context.share_num
+            port_val = np.dot(np.absolute(shares),data.current(context.tickers,'price'))
+            diff = leverage*context.portfolio.portfolio_value - port_val
+        while diff < 0 or not (max_vol > shares).all():
+            context.share_num -= 1*context.leverage
+            shares = context.adjHedge * context.share_num
+            port_val = np.dot(np.absolute(shares),data.current(context.tickers,'price'))
+            diff = leverage*context.portfolio.portfolio_value - port_val
+        return shares
 
-        Will not order unless the order can be filled the same day
-
-        Adjusts for the lowest common denominator
-        """
-        volume = context.volume.loc[pd.to_datetime(context.get_datetime()).date()]
-        for i, tick in enumerate(context.tickers):
-            max_order = volume[context.tick_list[i]]*0.025
-            adj_hedge = (max_order*data.current(tick,'price')) \
-                        /context.portfolio.portfolio_value
-            order_size = abs(context.portfolio.portfolio_value * hedge[i]) \
-                            /data.current(tick,'price')
-            if order_size > max_order:
-                hedge = adjustHedgeRatio(hedge*adj_hedge)
-                break
-        return hedge
-
-    def computeCost(S):
-        """
-        Computes cost function given the number of shares S
-        """
-        numerator = data.current(context.tickers,'price')*S
-        denominator = np.sum(numerator)
-        numerator -= np.absolute(context.hedgeRatio)
-        cost = numerator/denominator
-        cost = np.sum(cost**2)
-        return cost
-
-    def order_target_portfolio_percentages(order_type):
-        """
-        Use gradient descent to minimize difference function between
-        portfolio weights and hedge ratio
-        """
-        shares = (context.portfolio.portfolio_value*context.hedgeRatio)/data.current(context.tickers,'price')
-        shares = np.absolute(shares.values)
-        A = np.dot(data.current(context.tickers,'price'),shares)
-        cost = computeCost(shares)
-        alpha = 10000
-        while cost >= 0.14:
-            print('Current Cost Function = ',cost)
-            for i,tick in enumerate(context.tickers):
-                new_tickers = context.tickers[:i] + context.tickers[i+1:]
-                new_shares = np.delete(shares,i,0)
-                new_hedgeRatio = np.delete(np.absolute(context.hedgeRatio),i,0)
-                Pi = data.current(tick,'price')
-                B = data.current(new_tickers,'price')*new_shares
-                C = np.sum(B)
-                gradient = (Pi * (shares[i] * C + np.sum(B**2)))/A**3 \
-                            - (np.absolute(context.hedgeRatio[i]) * C \
-                            + (Pi * np.dot(new_hedgeRatio,B)))/A**2
-                shares[i] -= alpha*gradient
-            cost = computeCost(shares)
-        shares[context.hedgeRatio < 0 ] *= -1
+    def orderPortfolio(order_type,leverage):
+        shares = calc_target_share_ratio(leverage)
         for i,tick in enumerate(context.tickers):
             if order_type == 'long':
-                order(tick,shares[i])
+                order_target(tick,shares[i])
             if order_type == 'short':
-                order(tick,-shares[i])
-
-    def orderPortfolio(order_type):
-        for i,tick in enumerate(context.tickers):
-            if order_type == 'long':
-                order_target_percent(tick,context.hedgeRatio[i])
-            if order_type == 'short':
-                order_target_percent(tick,-context.hedgeRatio[i])
+                order_target(tick,-shares[i])
             if order_type == 'exit':
-                order_target_percent(tick,0)
+                order_target(tick,0)
 
-    #def calculatePositionsValue():
-    #    positions = context.portfolio.positions
-    #    total = 0
-    #    for tick in context.tickers:
-    #        total += abs(positions[tick]['amount']*positions[tick]['cost_basis'])
-    #    return total
-
-    #orderPortfolio(order_type='long')
-
-    #for i,tick in enumerate(context.tickers):
-    #    positions_value = calculatePositionsValue()
-    #    if positions_value != 0:
-    #        percent = (context.portfolio.positions[tick]['amount'] * context.portfolio.positions[tick]['cost_basis'])/calculatePositionsValue()
-    #        print(str(tick)+': '+str(percent)+'%    '+str(context.hedgeRatio[i]))
-
-    #print('\n\n')
-
-
-    current_price = np.dot(context.df_close.loc[pd.to_datetime(context.get_datetime()).date()],context.hedgeRatio)
+    div_adj_price = data.current(context.tickers,'price').values/context.adjDiv.values
+    #rolling_prices = data.history(context.tickers,'price',250,'1d').values/context.adjDiv.values
+    #rolling_avg = np.mean(np.dot(rolling_prices,context.adjHedge))
+    #rolling_std = np.std(np.dot(rolling_prices,context.adjHedge))
+    #rolling_avg_list.append(rolling_avg)
+    #rolling_std_list.append(rolling_std)
+    current_price = np.dot(div_adj_price,context.adjHedge)
+    #zscore = (current_price-rolling_avg)/rolling_std
     zscore = (current_price-context.avg)/context.std
  
     if context.long == True and zscore >= 0:
-        orderPortfolio(order_type='exit')
+        orderPortfolio(order_type='exit',leverage = context.leverage)
         context.long = False
-    elif context.short == True and zscore <= 0:
-        orderPortfolio(order_type='exit')
+    elif context.short == True and zscore <= -0:
+        orderPortfolio(order_type='exit',leverage = context.leverage)
         context.short = False
-    elif context.short == False and zscore >= 2:
-        orderPortfolio(order_type='short')
+    elif context.short == False and zscore >= 0.5:
+        orderPortfolio(order_type='short',leverage = context.leverage)
         context.short= True
-    elif context.long == False and zscore <= 2:
-        orderPortfolio(order_type='long')
+    elif context.long == False and zscore <= -0.5:
+        orderPortfolio(order_type='long',leverage = context.leverage)
         context.long= True
 
 eastern = pytz.timezone('US/Eastern')        
 start= datetime.datetime(2013,1,3,0,0,0,0,eastern)
 end = datetime.datetime(2017,8,1,0,0,0,0,eastern)
 
-results= run_algorithm(start=start,end=end,initialize=initialize,capital_base=100000,bundle='quantopian-quandl')
+results= run_algorithm(start=start,end=end,initialize=initialize,capital_base=10000,bundle='quantopian-quandl')
 
 plt.figure()
 plt.plot(results.portfolio_value)
 plt.title('Portfolio Value')
 plt.figure()
-plt.subplot(2,1,1)
 plt.plot(results.benchmark_period_return)
 plt.plot(results.algorithm_period_return)
 plt.title('Benchmark Returns vs. Algo Returns')
 plt.legend(['Benchmark Returns','Algo Returns'])
-plt.subplot(2,1,2)
+plt.figure()
 plt.plot(results.sharpe)
 plt.title('Rolling Sharpe')
+plt.figure()
+plt.subplot(2,2,1)
+plt.plot(results.gross_leverage)
+plt.title('Gross Leverage')
+plt.subplot(2,2,2)
+plt.plot(results.net_leverage)
+plt.title('Net Leverage')
+plt.subplot(2,2,3)
+plt.plot(results.max_leverage)
+plt.title('Max Leverage')
 plt.show()
+print(results.sharpe[-1])

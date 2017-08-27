@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-#import bpjtest as bpj
+import bpjtest as bpj
 import cPickle as pickle
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,8 +12,8 @@ class Vividict(dict):
         value = self[key] = type(self)() # retain local pointer to value
         return value                     # faster to return than dict lookup
 
-#Enter = np.linspace(0.5,3,50)
-#Exit = np.linspace(0,2,50)
+#Enter = np.linspace(0.5,3,25)
+#Exit = np.linspace(0,2,20)
 #
 #res=Vividict()
 #
@@ -32,7 +32,7 @@ class Vividict(dict):
 #		results[i][j] = res[i][j].get(timeout=1)
 #
 #print(results)
-#
+
 results = pickle.load(open('stdParams.pickle','rb'))
 #pickle.dump(results,open('stdParams.pickle','wb'))
 x = list()
@@ -46,7 +46,7 @@ for key,val in results.items():
 
 print(str(max(z))+' Enter: '+str(x[z.index(max(z))])+' Exit: '+str(y[z.index(max(z))]))
 
-#fig = plt.figure()
-#ax = fig.add_subplot(111,projection='3d')
-#ax.scatter(x,y,z)
-#plt.show()
+fig = plt.figure()
+ax = fig.add_subplot(111,projection='3d')
+ax.scatter(x,y,z)
+plt.show()
