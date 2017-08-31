@@ -12,13 +12,16 @@ quandl.ApiConfig.api_key = 'AfS6bPzj1CsRFyYxCcvz'
 
 class SecurityList():
 
-    def __init__(self,tickers):
+    def __init__(self,tickers=None):
         self.tickers = tickers
         self.data = pd.DataFrame(columns=self.tickers)
         self.volume = pd.DataFrame(columns=self.tickers)
         self.split = pd.DataFrame(columns=self.tickers)
         self.div = pd.DataFrame(columns=self.tickers)
         self.close = pd.DataFrame(columns=self.tickers)
+
+    def importData(self,data):
+        self.data = data
 
     def downloadQuandl(self,start,end):
          
