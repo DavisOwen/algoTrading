@@ -1,19 +1,49 @@
-from securityList import *
-sl=SecurityList()
-start = datetime.datetime(1994,9,29)
-end = datetime.datetime(2017,4,5)
-sl.downloadQuandl(start,end)
-sl_arr=sl.data.values # this will be a 2d numpy array (time x stocks)
+#!algotrading/bin/python3
 
-# need to remove columns corresponding to stocks that refused to download
-#This will avoid matrix inversion errors
-numNan=np.zeros(sl_arr.shape[1])
-for col in range(sl_arr.shape[1]):
-    numNan[col]=np.count_nonzero(np.isnan(sl_arr[:,col].astype('float')))
+import urllib3
+from bs4 import BeautifulSoup
+from securityList import SecurityList
+import datetime
+import numpy as np
+import matplotlib.pyplot as plt
 
-sl_arr_noNan=sl_arr[:,np.where(numNan==0)].squeeze()
+def scrape_list(site):
 
-sl.data=sl_arr_noNan
-ts = sl.genTimeSeries()
-plt.plot(np.arange(len(ts)),ts)
-plt.show()
+    print('Scraping tickers')
+    hdr = {'User-Agent': 'Mozilla/5.0'}
+    http = urllib3.PoolManager()
+    response = http.request('GET',site)
+    soup = BeautifulSoup(response.data, 'html.parser')
+
+    table = soup.find('table', {'class': 'wikitable sortable'})
+    sector_tickers = dict()
+    for row in table.findAll('tr'):
+        col = row.findAll('td')
+        if len(col) > 0:
+            sector = str(col[3].string.strip()).lower().replace(' ', '_')
+            ticker = str(col[0].string.strip())
+            for i in range(len(ticker)):
+               if ticker[i] == '.':
+                  new = ticker[:i]+'_'+ticker[(i+1):]
+                  ticker = new
+            if sector not in sector_tickers:
+                sector_tickers[sector] = list()
+            sector_tickers[sector].append(ticker)
+    return sector_tickers
+
+def main():
+
+    tickers = scrape_list('http://en.wikipedia.org/wiki/List_of_S%26P_500_companies');
+    lticks = list()
+    for l in tickers.values():
+        for tick in l:
+            lticks.append(tick)
+    sl = SecurityList(lticks)
+    start = datetime.datetime(1994,9,29)
+    end = datetime.datetime(2017,4,5)
+    sl.downloadQuandl(start, end)
+    ts = sl.genTimeSeries()
+    plt.plot(np.arange(len(ts)),ts)
+    plt.show()
+
+main()

@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import quandl
 import numpy as np
 import pandas as pd
@@ -25,24 +23,35 @@ class SecurityList():
 
     def downloadQuandl(self,start,end):
 
-        self.data,self.volume,self.split,self.div,self.close= pickle.load(open('WIKIdata.pickle','rb'))
-        #def convert_dt(elem):
-        #    return pd.to_datetime(elem).date()
-        #for sec in self.tickers:
-        #    a = quandl.get('WIKI/'+sec, start_date=start,end_date=end)
-        #    self.data[sec] = a['Adj. Close']
-        #    self.volume[sec] = a['Volume']
-        #    self.split[sec] = a['Split Ratio']
-        #    self.div[sec] = a['Ex-Dividend']
-        #    self.close[sec] = a['Close']
-        #    f = np.vectorize(convert_dt)
-        #    index = f(a.index)
-        #self.data = self.data.set_index(index)
-        #self.volume = self.volume.set_index(index)
-        #self.split = self.split.set_index(index)
-        #self.div = self.div.set_index(index)
-        #self.close = self.close.set_index(index)
-        #pickle.dump((self.data,self.volume,self.split,self.div,self.close),open('WIKIdata.pickle','wb'))
+        try:
+            self.data,self.volume,self.split,self.div,self.close = pickle.load(open('WIKIdata.pickle','rb'))
+        except FileNotFoundError:
+            def convert_dt(elem):
+                return pd.to_datetime(elem).date()
+            for sec in self.tickers:
+                print("downloading "+sec)
+                try:
+                    a = quandl.get('WIKI/'+sec, start_date=start,end_date=end)
+                    self.data[sec] = a['Adj. Close']
+                    self.volume[sec] = a['Volume']
+                    self.split[sec] = a['Split Ratio']
+                    self.div[sec] = a['Ex-Dividend']
+                    self.close[sec] = a['Close']
+                    f = np.vectorize(convert_dt)
+                    index = f(a.index)
+                except:
+                    pass
+            self.data = self.data.set_index(index)
+            self.volume = self.volume.set_index(index)
+            self.split = self.split.set_index(index)
+            self.div = self.div.set_index(index)
+            self.close = self.close.set_index(index)
+            pickle.dump((self.data,self.volume,self.split,self.div,self.close),open('WIKIdata.pickle','wb'))
+        self.data = self.data.dropna(axis='columns')
+        self.volume = self.volume.dropna(axis='columns')
+        self.split = self.split.dropna(axis='columns')
+        self.div = self.div.dropna(axis='columns')
+        self.close = self.close.dropna(axis='columns')
 
     def genTimeSeries(self):
 
@@ -63,9 +72,8 @@ class SecurityList():
 
         ts_row,ts_col = self.data.shape
         matrix = np.zeros((ts_row,ts_col))
-        #for i, sec in enumerate(self.data):
-        for i in range(ts_col):
-            matrix[:,i] = self.data[:,i]
+        for i, sec in enumerate(self.data):
+            matrix[:,i] = self.data[sec]
         return matrix
 
     def getVolume(self):
