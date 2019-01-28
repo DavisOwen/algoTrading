@@ -14,5 +14,6 @@ for col in range(sl_arr.shape[1]):
 sl_arr_noNan=sl_arr[:,np.where(numNan==0)].squeeze()
 
 sl.data=sl_arr_noNan
-sl.genTimeSeries()
-
+ts = sl.genTimeSeries()
+plt.plot(np.arange(len(ts)),ts)
+plt.show()
