@@ -1,3 +1,10 @@
+'''
+SecurityList class that loads security data
+and finds hedge ratio of portolfio, returns
+time series, and other useful functions
+
+'''
+
 import quandl
 import numpy as np
 import pandas as pd
@@ -10,7 +17,7 @@ quandl.ApiConfig.api_key = 'AfS6bPzj1CsRFyYxCcvz'
 
 class SecurityList():
 
-    def __init__(self,tickers=None):
+    def __init__(self,tickers):
         self.tickers = tickers
         self.data = pd.DataFrame(columns=self.tickers)
         self.volume = pd.DataFrame(columns=self.tickers)
@@ -52,6 +59,12 @@ class SecurityList():
         self.split = self.split.dropna(axis='columns')
         self.div = self.div.dropna(axis='columns')
         self.close = self.close.dropna(axis='columns')
+        print(self.data.columns)
+        self.data = self.data[self.tickers]
+        self.volume = self.volume[self.tickers]
+        self.split = self.split[self.tickers]
+        self.div = self.div[self.tickers]
+        self.close = self.close[self.tickers]
 
     def genTimeSeries(self):
 

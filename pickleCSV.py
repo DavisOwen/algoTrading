@@ -1,4 +1,14 @@
-#!/usr/bin/python
+#!algotrading/bin/python
+
+'''
+converts local csv file of stock prices 
+into pandas data frame and stores it as
+pickle file in ./data
+
+usage:
+    pickleCSV /path/to/file.csv
+
+'''
 
 import pandas as pd
 import cPickle as pickle

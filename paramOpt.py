@@ -1,7 +1,11 @@
-#!/usr/bin/python
+#!algotrading/bin/python3
+
+'''
+Test optimal std deviation parameter
+in bollinger pair johansen for the bollinger band
+'''
 
 import bpjtest as bpj
-import cPickle as pickle
 import matplotlib.pyplot as plt
 import numpy as np
 import multiprocessing as mp
@@ -12,37 +16,35 @@ class Vividict(dict):
         value = self[key] = type(self)() # retain local pointer to value
         return value                     # faster to return than dict lookup
 
-#Enter = np.linspace(0.5,3,25)
-#Exit = np.linspace(0,2,20)
-#
-#res=Vividict()
-#
-#pool = mp.Pool()
-#
-#for i in Enter:
-#	for j in Exit:
-#		res[i][j] = pool.apply_async(bpj.main,args=(i,j))
-#
-#pool.close()
-#pool.join()
-#results = Vividict()
-#
-#for i in res:
-#	for j in res[i]:
-#		results[i][j] = res[i][j].get(timeout=1)
-#
-#print(results)
+Enter = np.linspace(0.5,3,25)
+Exit = np.linspace(0,2,20)
 
-results = pickle.load(open('stdParams.pickle','rb'))
-#pickle.dump(results,open('stdParams.pickle','wb'))
+res=Vividict()
+
+pool = mp.Pool()
+
+for i in Enter:
+    for j in Exit:
+        res[i][j] = pool.apply_async(bpj.main,args=(i,j))
+
+pool.close()
+pool.join()
+results = Vividict()
+
+for i in res:
+    for j in res[i]:
+        results[i][j] = res[i][j].get(timeout=1)
+
+print(results)
+
 x = list()
 y = list()
 z = list()
 maximum = float()
 for key,val in results.items():
-	x.extend([key]*len(val))
-	y.extend(val.keys())
-	z.extend(val.values())
+    x.extend([key]*len(val))
+    y.extend(val.keys())
+    z.extend(val.values())
 
 print(str(max(z))+' Enter: '+str(x[z.index(max(z))])+' Exit: '+str(y[z.index(max(z))]))
 

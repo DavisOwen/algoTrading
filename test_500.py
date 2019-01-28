@@ -1,5 +1,11 @@
 #!algotrading/bin/python3
 
+'''
+Creates a time series from all 500 stocks
+in the S&P
+
+'''
+
 import urllib3
 from bs4 import BeautifulSoup
 from securityList import SecurityList

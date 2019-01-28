@@ -1,4 +1,10 @@
-#!/usr/bin/python
+#!algotrading/bin/python3
+
+'''
+Runs a polynomial regression on a time series and tests 
+its ability to predict prices
+
+'''
 
 import datetime
 import quandl
@@ -19,9 +25,6 @@ ticks = ['AYI','APA','AMZN','LNT','CTL','ALB','ABBV','AMT','ADM','AON','ORCL']
 
 sec_list = SecurityList(ticks)
 sec_list.downloadQuandl(start,end)
-
-pick.dump(sec_list,open('sec_list.pickle','wb'))
-#sec_list = pick.load(open('sec_list.pickle','rb'))
 ts = sec_list.runJohansen()
 plt.figure()
 plt.plot(np.linspace(0,1,len(ts)),ts)
@@ -41,5 +44,5 @@ plt.show()
 plt.figure()
 plt.plot(np.linspace(0,1,len(ts)),ts)
 plt.plot(X_train,train)
-#plt.plot(X_test,test)
+plt.plot(X_test,test)
 plt.show()
