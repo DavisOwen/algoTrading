@@ -4,9 +4,9 @@ import quandl
 import numpy as np
 import pandas as pd
 import datetime
-import statsmodels.tsa.johansen as jh
+import statsmodels.tsa.vector_ar.vecm as jh
 import matplotlib.pyplot as plt
-import cPickle as pickle
+import pickle
 
 quandl.ApiConfig.api_key = 'AfS6bPzj1CsRFyYxCcvz'
 
@@ -24,7 +24,7 @@ class SecurityList():
         self.data = data
 
     def downloadQuandl(self,start,end):
-         
+
         self.data,self.volume,self.split,self.div,self.close= pickle.load(open('WIKIdata.pickle','rb'))
         #def convert_dt(elem):
         #    return pd.to_datetime(elem).date()
@@ -43,7 +43,7 @@ class SecurityList():
         #self.div = self.div.set_index(index)
         #self.close = self.close.set_index(index)
         #pickle.dump((self.data,self.volume,self.split,self.div,self.close),open('WIKIdata.pickle','wb'))
-        
+
     def genTimeSeries(self):
 
         '''
@@ -54,17 +54,18 @@ class SecurityList():
         return ts
 
     def genHedgeRatio(self):
-                    
+
         matrix = self.genMatrix()
         results = jh.coint_johansen(matrix,0,1)
         return results.evec[:,0]
-        
+
     def genMatrix(self):
 
         ts_row,ts_col = self.data.shape
         matrix = np.zeros((ts_row,ts_col))
-        for i, sec in enumerate(self.data):
-            matrix[:,i] = self.data[sec]
+        #for i, sec in enumerate(self.data):
+        for i in range(ts_col):
+            matrix[:,i] = self.data[:,i]
         return matrix
 
     def getVolume(self):
