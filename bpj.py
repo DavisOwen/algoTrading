@@ -13,7 +13,7 @@ zipline_logging= logbook.NestedSetup([logbook.NullHandler(level=logbook.DEBUG),l
 zipline_logging.push_application()
 
 from zipline import run_algorithm
-from zipline.api import order_target_percent, symbol, schedule_function, date_rules, time_rules, set_slippage, order_target
+from zipline.api import order_target_percent, symbol, schedule_function, date_rules, time_rules, set_slippage, order_target 
 from zipline.finance.slippage import VolumeShareSlippage
 
 def initialize(context):
@@ -26,7 +26,7 @@ def initialize(context):
     start = datetime.datetime(2013,1,3)
     end = datetime.datetime(2017,8,1)
     sec_list = SecurityList(tickers=tickers)
-    sec_list.downloadQuandl(start,end)
+    sec_list.loadData(start,end)
     ts = sec_list.genTimeSeries()
     context.adjDiv = sec_list.adjDividends()
     context.adjHedge = sec_list.adjSplits()
@@ -41,8 +41,8 @@ def initialize(context):
     schedule_function(place_orders, date_rules.every_day(), time_rules.market_open(hours=1, minutes=30))
 
 def adjust_splits_dividends(context,data):
-    splits = context.splits.loc[pd.to_datetime(context.get_datetime()).date()]
-    divFactors = context.divFactors.loc[pd.to_datetime(context.get_datetime()).date()]
+    splits = context.splits.loc[context.get_datetime().date()]
+    divFactors = context.divFactors.loc[context.get_datetime().date()]
     context.adjHedge *= splits
     context.adjDiv /= divFactors
 
@@ -54,12 +54,12 @@ def place_orders(context,data):
         diff = leverage*context.portfolio.portfolio_value - port_val
         curr_vol = data.current(context.tickers,'volume')
         max_vol = 0.025*curr_vol
-        while diff > context.diff_thresh and diff > 0 and (max_vol > shares).all():
+        while diff > context.diff_thresh and diff > 0 and (max_vol.reset_index(drop=True) > shares.reset_index(drop=True)).all():
             context.share_num += 1*context.leverage
             shares = context.adjHedge*context.share_num
             port_val = np.dot(np.absolute(shares),data.current(context.tickers,'price'))
             diff = leverage*context.portfolio.portfolio_value - port_val
-        while diff < 0 or not (max_vol > shares).all():
+        while diff < 0 or not (max_vol.reset_index(drop=True) > shares.reset_index(drop=True)).all():
             context.share_num -= 1*context.leverage
             shares = context.adjHedge * context.share_num
             port_val = np.dot(np.absolute(shares),data.current(context.tickers,'price'))
@@ -100,10 +100,10 @@ def place_orders(context,data):
         context.long= True
 
 eastern = pytz.timezone('US/Eastern')        
-start= datetime.datetime(2013,1,3,0,0,0,0,eastern)
+start= datetime.datetime(2013,1,4,0,0,0,0,eastern)
 end = datetime.datetime(2017,8,1,0,0,0,0,eastern)
 
-results= run_algorithm(start=start,end=end,initialize=initialize,capital_base=10000,bundle='quantopian-quandl')
+results = run_algorithm(start=start,end=end,initialize=initialize,capital_base=10000,bundle='quantopian-quandl')
 
 plt.figure()
 plt.plot(results.portfolio_value)

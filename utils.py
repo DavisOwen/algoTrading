@@ -1,21 +1,10 @@
-#!algotrading/bin/python3
-
-'''
-Creates a time series from all 500 stocks
-in the S&P
-
-'''
-
 import urllib3
 from bs4 import BeautifulSoup
-from securityList import SecurityList
-import datetime
-import numpy as np
-import matplotlib.pyplot as plt
 
-def scrape_list(site):
+def scrape_list():
 
     print('Scraping tickers')
+    site = 'http://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
     hdr = {'User-Agent': 'Mozilla/5.0'}
     http = urllib3.PoolManager()
     response = http.request('GET',site)
@@ -23,11 +12,11 @@ def scrape_list(site):
 
     table = soup.find('table', {'class': 'wikitable sortable'})
     sector_tickers = dict()
-    for row in table.findAll('tr'):
+    for row in table.findAll('tr')[1:]:
         col = row.findAll('td')
         if len(col) > 0:
             sector = str(col[3].string.strip()).lower().replace(' ', '_')
-            ticker = str(col[0].string.strip())
+            ticker = str(col[1].string.strip())
             for i in range(len(ticker)):
                if ticker[i] == '.':
                   new = ticker[:i]+'_'+ticker[(i+1):]
@@ -37,19 +26,9 @@ def scrape_list(site):
             sector_tickers[sector].append(ticker)
     return sector_tickers
 
-def main():
-
-    tickers = scrape_list('http://en.wikipedia.org/wiki/List_of_S%26P_500_companies');
-    lticks = list()
-    for l in tickers.values():
-        for tick in l:
-            lticks.append(tick)
-    sl = SecurityList(lticks)
-    start = datetime.datetime(1994,9,29)
-    end = datetime.datetime(2017,4,5)
-    sl.downloadQuandl(start, end)
-    ts = sl.genTimeSeries()
-    plt.plot(np.arange(len(ts)),ts)
-    plt.show()
-
-main()
+def listify(x):
+    y = list()
+    for lis in x.values():
+        for val in lis:
+            y.append(val)
+    return y

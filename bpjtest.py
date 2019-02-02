@@ -1,5 +1,12 @@
 #!algotrading/bin/python3
 
+'''
+Wrapper for bpj that feeds results
+to paramOpt.py to find out which zEnter
+and zExit zscore values lead to optimal 
+results from backtesting
+'''
+
 import numpy as np
 import pandas as pd
 import sys
