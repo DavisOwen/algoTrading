@@ -1,5 +1,13 @@
 #!algotrading/bin/python3
 
+'''
+Bollinger Pair Johansen,
+using Johansen test to create a 
+mean reverting portfolio, and 
+using bollinger bands strategy 
+to backtest
+'''
+
 import numpy as np
 import pandas as pd
 import sys
@@ -8,13 +16,14 @@ import pytz
 import datetime
 import matplotlib.pyplot as plt
 from securityList import SecurityList
-
-zipline_logging= logbook.NestedSetup([logbook.NullHandler(level=logbook.DEBUG),logbook.StreamHandler(sys.stdout,level=logbook.INFO),logbook.StreamHandler(sys.stderr,level=logbook.ERROR),])
-zipline_logging.push_application()
-
 from zipline import run_algorithm
 from zipline.api import order_target_percent, symbol, schedule_function, date_rules, time_rules, set_slippage, order_target 
 from zipline.finance.slippage import VolumeShareSlippage
+zipline_logging= logbook.NestedSetup([logbook.NullHandler(level=logbook.DEBUG),logbook.StreamHandler(sys.stdout,level=logbook.INFO),logbook.StreamHandler(sys.stderr,level=logbook.ERROR),])
+zipline_logging.push_application()
+
+zEnter = 0.5
+zExit = 0
 
 def initialize(context):
     set_slippage(VolumeShareSlippage(volume_limit=0.025,price_impact=0.1))
@@ -77,54 +86,58 @@ def place_orders(context,data):
                 order_target(tick,0)
 
     div_adj_price = data.current(context.tickers,'price').values/context.adjDiv.values
-    #rolling_prices = data.history(context.tickers,'price',250,'1d').values/context.adjDiv.values
-    #rolling_avg = np.mean(np.dot(rolling_prices,context.adjHedge))
-    #rolling_std = np.std(np.dot(rolling_prices,context.adjHedge))
-    #rolling_avg_list.append(rolling_avg)
-    #rolling_std_list.append(rolling_std)
+    rolling_prices = data.history(context.tickers,'price',250,'1d').values/context.adjDiv.values
+    rolling_avg = np.mean(np.dot(rolling_prices,context.adjHedge))
+    rolling_std = np.std(np.dot(rolling_prices,context.adjHedge))
     current_price = np.dot(div_adj_price,context.adjHedge)
-    #zscore = (current_price-rolling_avg)/rolling_std
-    zscore = (current_price-context.avg)/context.std
+    zscore = (current_price-rolling_avg)/rolling_std
+    #zscore = (current_price-context.avg)/context.std
  
-    if context.long == True and zscore >= 0:
+    if context.long == True and zscore >= zExit:
         orderPortfolio(order_type='exit',leverage = context.leverage)
         context.long = False
-    elif context.short == True and zscore <= -0:
+    elif context.short == True and zscore <= -zExit:
         orderPortfolio(order_type='exit',leverage = context.leverage)
         context.short = False
-    elif context.short == False and zscore >= 0.5:
+    elif context.short == False and zscore >= zEnter:
         orderPortfolio(order_type='short',leverage = context.leverage)
         context.short= True
-    elif context.long == False and zscore <= -0.5:
+    elif context.long == False and zscore <= -zEnter:
         orderPortfolio(order_type='long',leverage = context.leverage)
         context.long= True
 
-eastern = pytz.timezone('US/Eastern')        
-start= datetime.datetime(2013,1,4,0,0,0,0,eastern)
-end = datetime.datetime(2017,8,1,0,0,0,0,eastern)
+def main(Enter, Exit):
 
-results = run_algorithm(start=start,end=end,initialize=initialize,capital_base=10000,bundle='quantopian-quandl')
+    zEnter = Enter
+    zExit = Exit
+    eastern = pytz.timezone('US/Eastern')        
+    start= datetime.datetime(2013,1,4,0,0,0,0,eastern)
+    end = datetime.datetime(2017,8,1,0,0,0,0,eastern)
+    results = run_algorithm(start=start,end=end,initialize=initialize,capital_base=10000,bundle='quantopian-quandl')
+    plt.figure()
+    plt.plot(results.portfolio_value)
+    plt.title('Portfolio Value')
+    plt.figure()
+    plt.plot(results.benchmark_period_return)
+    plt.plot(results.algorithm_period_return)
+    plt.title('Benchmark Returns vs. Algo Returns')
+    plt.legend(['Benchmark Returns','Algo Returns'])
+    plt.figure()
+    plt.plot(results.sharpe)
+    plt.title('Rolling Sharpe')
+    plt.figure()
+    plt.subplot(2,2,1)
+    plt.plot(results.gross_leverage)
+    plt.title('Gross Leverage')
+    plt.subplot(2,2,2)
+    plt.plot(results.net_leverage)
+    plt.title('Net Leverage')
+    plt.subplot(2,2,3)
+    plt.plot(results.max_leverage)
+    plt.title('Max Leverage')
+    plt.show()
+    return results.sharpe[-1]
 
-plt.figure()
-plt.plot(results.portfolio_value)
-plt.title('Portfolio Value')
-plt.figure()
-plt.plot(results.benchmark_period_return)
-plt.plot(results.algorithm_period_return)
-plt.title('Benchmark Returns vs. Algo Returns')
-plt.legend(['Benchmark Returns','Algo Returns'])
-plt.figure()
-plt.plot(results.sharpe)
-plt.title('Rolling Sharpe')
-plt.figure()
-plt.subplot(2,2,1)
-plt.plot(results.gross_leverage)
-plt.title('Gross Leverage')
-plt.subplot(2,2,2)
-plt.plot(results.net_leverage)
-plt.title('Net Leverage')
-plt.subplot(2,2,3)
-plt.plot(results.max_leverage)
-plt.title('Max Leverage')
-plt.show()
-print(results.sharpe[-1])
+if __name__ == "__main__":
+    res = main(zEnter, zExit)
+    print(res)
