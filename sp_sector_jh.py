@@ -26,30 +26,7 @@ from securityList import SecurityList
 import itertools
 import multiprocessing
 import signal
-
-def scrape_list(site):
-
-    print('Scraping tickers')
-    hdr = {'User-Agent': 'Mozilla/5.0'}
-    req = urllib2.Request(site, headers=hdr)
-    page = urllib2.urlopen(req)
-    soup = BeautifulSoup(page,'html5lib')
-
-    table = soup.find('table', {'class': 'wikitable sortable'})
-    sector_tickers = dict()
-    for row in table.findAll('tr'):
-        col = row.findAll('td')
-        if len(col) > 0:
-            sector = str(col[3].string.strip()).lower().replace(' ', '_')
-            ticker = str(col[0].string.strip())
-            for i in range(len(ticker)):
-               if ticker[i] == '.':
-                  new = ticker[:i]+'_'+ticker[(i+1):]
-                  ticker = new
-            if sector not in sector_tickers:
-                sector_tickers[sector] = list()
-            sector_tickers[sector].append(ticker)
-    return sector_tickers
+from utils import scrape_list
 
 def beginning_date(tickers,date):
 
@@ -128,10 +105,10 @@ if __name__== "__main__":
         signal.signal(signal.SIGINT, handler)
         start_time = time.time()
         path_to_data = '/home/sowen/algorithmic_trading/algorithms/data/'
-        tickers= scrape_list('http://en.wikipedia.org/wiki/List_of_S%26P_500_companies')
+        tickers = scrape_list()
         tickers = tickers.values()
         date = datetime.datetime(1990,1,1)
-        tickers,tick_dict = beginning_date(tickers,date)
+        tickers, tick_dict = beginning_date(tickers,date)
         print('Creating paramlist')
         paramlist = [itertools.islice(x,2) for x in tickers]
         paramlist = list(itertools.product(*paramlist))

@@ -1,5 +1,7 @@
 import urllib3
 from bs4 import BeautifulSoup
+import matplotlib.pyplot as plt
+
 
 def scrape_list():
 
@@ -27,8 +29,38 @@ def scrape_list():
     return sector_tickers
 
 def listify(x):
+    
+    """ Turns dictionary of lists into one long list """
+
     y = list()
     for lis in x.values():
         for val in lis:
             y.append(val)
     return y
+
+def plot_results(results):
+
+    """ Plots useful metrics from a zipline backtest result object """
+
+    plt.figure()
+    plt.plot(results.portfolio_value)
+    plt.title('Portfolio Value')
+    plt.figure()
+    plt.plot(results.benchmark_period_return)
+    plt.plot(results.algorithm_period_return)
+    plt.title('Benchmark Returns vs. Algo Returns')
+    plt.legend(['Benchmark Returns','Algo Returns'])
+    plt.figure()
+    plt.plot(results.sharpe)
+    plt.title('Rolling Sharpe')
+    plt.figure()
+    plt.subplot(2,2,1)
+    plt.plot(results.gross_leverage)
+    plt.title('Gross Leverage')
+    plt.subplot(2,2,2)
+    plt.plot(results.net_leverage)
+    plt.title('Net Leverage')
+    plt.subplot(2,2,3)
+    plt.plot(results.max_leverage)
+    plt.title('Max Leverage')
+    plt.show()

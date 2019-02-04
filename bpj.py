@@ -14,11 +14,12 @@ import sys
 import logbook
 import pytz
 import datetime
-import matplotlib.pyplot as plt
 from securityList import SecurityList
+from utils import plot_results
 from zipline import run_algorithm
-from zipline.api import order_target_percent, symbol, schedule_function, date_rules, time_rules, set_slippage, order_target 
+from zipline.api import order_target_percent, symbol, schedule_function, date_rules, time_rules, set_slippage, order_target, set_commission
 from zipline.finance.slippage import VolumeShareSlippage
+from zipline.finance.commission import PerShare
 zipline_logging= logbook.NestedSetup([logbook.NullHandler(level=logbook.DEBUG),logbook.StreamHandler(sys.stdout,level=logbook.INFO),logbook.StreamHandler(sys.stderr,level=logbook.ERROR),])
 zipline_logging.push_application()
 
@@ -26,30 +27,44 @@ zEnter = 0.5
 zExit = 0
 
 def initialize(context):
+
+    # https://www.quantopian.com/help#ide-slippage
     set_slippage(VolumeShareSlippage(volume_limit=0.025,price_impact=0.1))
+    
+    # https://www.quantopian.com/help#ide-commission
+    set_commission(PerShare(cost=0.001, min_trade_cost=0))
+
     tickers = ['AYI','APA','AMZN','LNT','CTL','ALB','ABBV','AMT','ADM','AON','ORCL']
-    context.tick_list = tickers
     context.tickers = [ symbol(x) for x in tickers ]
-    context.long= False
-    context.short= False
-    start = datetime.datetime(2013,1,3)
+    context.long = False
+    context.short = False
+    start = datetime.datetime(2014,1,3)
     end = datetime.datetime(2017,8,1)
     sec_list = SecurityList(tickers=tickers)
     sec_list.loadData(start,end)
-    ts = sec_list.genTimeSeries()
+
+    # Factors used to maintain mean reverting behavior
+    # of prices as time goes on and stocks go through
+    # dividend payments and splits
     context.adjDiv = sec_list.adjDividends()
     context.adjHedge = sec_list.adjSplits()
     context.divFactors = sec_list.getAdjFactors()
     context.splits = sec_list.getSplits()
-    context.avg = ts.mean()
-    context.std = ts.std()
-    context.leverage = 1
+
+    context.leverage = 10
     context.share_num = 0
     context.diff_thresh = 100
     schedule_function(adjust_splits_dividends, date_rules.every_day(), time_rules.market_open())
     schedule_function(place_orders, date_rules.every_day(), time_rules.market_open(hours=1, minutes=30))
 
 def adjust_splits_dividends(context,data):
+
+    '''
+    Adjusts the hedge ratio based on splits and adjusts the 
+    prices based on dividend payments
+
+    '''
+
     splits = context.splits.loc[context.get_datetime().date()]
     divFactors = context.divFactors.loc[context.get_datetime().date()]
     context.adjHedge *= splits
@@ -58,6 +73,13 @@ def adjust_splits_dividends(context,data):
 def place_orders(context,data): 
 
     def calc_target_share_ratio(leverage):
+
+        '''
+        Calculates the target share ratio
+        based on the given hedge ratio
+
+        '''
+
         shares = context.adjHedge*context.share_num
         port_val = np.dot(np.absolute(shares),data.current(context.tickers,'price'))
         diff = leverage*context.portfolio.portfolio_value - port_val
@@ -76,6 +98,7 @@ def place_orders(context,data):
         return shares
 
     def orderPortfolio(order_type,leverage):
+
         shares = calc_target_share_ratio(leverage)
         for i,tick in enumerate(context.tickers):
             if order_type == 'long':
@@ -85,13 +108,14 @@ def place_orders(context,data):
             if order_type == 'exit':
                 order_target(tick,0)
 
+    # Dividend adjusted prices
     div_adj_price = data.current(context.tickers,'price').values/context.adjDiv.values
+
     rolling_prices = data.history(context.tickers,'price',250,'1d').values/context.adjDiv.values
     rolling_avg = np.mean(np.dot(rolling_prices,context.adjHedge))
     rolling_std = np.std(np.dot(rolling_prices,context.adjHedge))
     current_price = np.dot(div_adj_price,context.adjHedge)
     zscore = (current_price-rolling_avg)/rolling_std
-    #zscore = (current_price-context.avg)/context.std
  
     if context.long == True and zscore >= zExit:
         orderPortfolio(order_type='exit',leverage = context.leverage)
@@ -111,31 +135,10 @@ def main(Enter, Exit):
     zEnter = Enter
     zExit = Exit
     eastern = pytz.timezone('US/Eastern')        
-    start= datetime.datetime(2013,1,4,0,0,0,0,eastern)
+    start= datetime.datetime(2014,1,4,0,0,0,0,eastern)
     end = datetime.datetime(2017,8,1,0,0,0,0,eastern)
     results = run_algorithm(start=start,end=end,initialize=initialize,capital_base=10000,bundle='quantopian-quandl')
-    plt.figure()
-    plt.plot(results.portfolio_value)
-    plt.title('Portfolio Value')
-    plt.figure()
-    plt.plot(results.benchmark_period_return)
-    plt.plot(results.algorithm_period_return)
-    plt.title('Benchmark Returns vs. Algo Returns')
-    plt.legend(['Benchmark Returns','Algo Returns'])
-    plt.figure()
-    plt.plot(results.sharpe)
-    plt.title('Rolling Sharpe')
-    plt.figure()
-    plt.subplot(2,2,1)
-    plt.plot(results.gross_leverage)
-    plt.title('Gross Leverage')
-    plt.subplot(2,2,2)
-    plt.plot(results.net_leverage)
-    plt.title('Net Leverage')
-    plt.subplot(2,2,3)
-    plt.plot(results.max_leverage)
-    plt.title('Max Leverage')
-    plt.show()
+    plot_results(results)
     return results.sharpe[-1]
 
 if __name__ == "__main__":
