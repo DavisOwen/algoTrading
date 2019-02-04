@@ -19,7 +19,7 @@ quandl.ApiConfig.api_key = 'AfS6bPzj1CsRFyYxCcvz'
 
 class SecurityList():
 
-    def __init__(self,tickers):
+    def __init__(self, tickers, start = None, end = None):
 
         self.tickers = tickers
         self.data = pd.DataFrame(columns=self.tickers)
@@ -28,27 +28,30 @@ class SecurityList():
         self.div = pd.DataFrame(columns=self.tickers)
         self.close = pd.DataFrame(columns=self.tickers)
 
+        # Hedge ratio start and end
+        self.start = start
+        self.end = end
+
     def importData(self,data):
 
         self.data = data
 
-    def loadData(self,start = None, end = None, minLength = 300):
+    def loadData(self, start = None, end = None, minLength = 300):
 
-        '''
+        """
         Loads data for tickers from
         start to end. If stocks don't 
         have data from start, will 
         load data from first available 
         date
 
-        '''
+        """
 
         try: 
             self.data,self.volume,self.split,self.div,self.close = pickle.load(open('WIKIdata.pickle','rb'))
         except FileNotFoundError:
             print("File not found! Running downloadQuandl()")
             self.downloadQuandl()
-
         self.data = self.data[self.tickers][start:end]
         self.volume = self.volume[self.tickers][start:end]
         self.split = self.split[self.tickers][start:end]
@@ -66,13 +69,27 @@ class SecurityList():
 
     def checkNaN(self):
 
-        columns = self.data.columns[self.data.isna().any()].tolist()
+        columns = self.data.columns[self.data.isna().all()].tolist()
         for col in columns:
             self.downloadSecurity(col)            
         columns = self.data.columns[self.data.isna().any()].tolist()
         if(columns):
-            return True
+            self.fillNaN(columns)
+            columns = self.data.columns[self.data.isna().any()].tolist()
+            if(columns):
+                return True
         return False
+
+    def fillNaN(self, columns):
+
+        """
+        Fills stray NaN values by setting it to the previous days value
+
+        """
+
+        for col in columns:
+            index = np.argwhere(np.isnan(self.data[col]))
+            self.data[col][index] = self.data[col][index - 1]
 
     def findEarliest(self):
         return self.data[self.data.count().idxmin()].first_valid_index()
@@ -89,21 +106,29 @@ class SecurityList():
     def downloadSecurityUtil(self, sec):
 
         print("downloading "+sec)
+        all_data, all_volume, all_split, all_div, all_close = pickle.load(open('WIKIdata.pickle','rb'))
         a = quandl.get('WIKI/'+sec)
         self.data[sec] = a['Adj. Close']
         self.volume[sec] = a['Volume']
         self.split[sec] = a['Split Ratio']
         self.div[sec] = a['Ex-Dividend']
         self.close[sec] = a['Close']
+        all_data[sec] = a['Adj. Close']
+        all_volume[sec] = a['Volume']
+        all_split[sec] = a['Split Ratio']
+        all_div[sec] = a['Ex-Dividend']
+        all_close[sec] = a['Close']
+        pickle.dump((all_data, all_volume, all_split, all_div, all_close),open('WIKIdata.pickle','wb'))
 
     def downloadQuandl(self):
 
-        '''
+        """
         Downloads all quandl data for 
         all stocks in SP500 from all time,
         and stores in WIKIdata.pickle
 
-        '''
+        """
+
         tickers = scrape_list()
         tickers = listify(tickers)
         for sec in tickers:
@@ -112,9 +137,11 @@ class SecurityList():
 
     def genTimeSeries(self):
 
-        '''
+        """
         Generate Time Series using johansen test
-        '''
+
+        """
+
         eig = self.genHedgeRatio()
         ts = np.dot(self.data,eig)
         return ts
@@ -127,22 +154,29 @@ class SecurityList():
 
     def genMatrix(self):
 
-        ts_row,ts_col = self.data.shape
+        # self.start and self.end are the time period to calculate the 
+        # hedge ratio for
+        data_eig = self.data[self.start:self.end]
+        ts_row, ts_col = data_eig.shape
         matrix = np.zeros((ts_row,ts_col))
-        for i, sec in enumerate(self.data):
-            matrix[:,i] = self.data[sec]
+        for i, sec in enumerate(data_eig):
+            matrix[:,i] = data_eig[sec]
         return matrix
 
     def getVolume(self):
+
         return self.volume
 
     def getSplits(self):
+
         return self.split
 
     def getDiv(self):
+
         return self.div
 
     def getAdjFactors(self):
+
         temp = self.div.copy()
         temp[temp != 0] = 1
         close = self.close*temp
@@ -153,12 +187,14 @@ class SecurityList():
         return adj_factors
 
     def adjSplits(self):
-        split = self.split.product()
+
+        split = self.split[self.start:self.end].product()
         eig = self.genHedgeRatio()
         adj = eig/split
         return adj
 
     def adjDividends(self):
+
         adj_fact = self.getAdjFactors()
         total_fact = adj_fact.product()
         return total_fact

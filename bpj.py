@@ -38,10 +38,16 @@ def initialize(context):
     context.tickers = [ symbol(x) for x in tickers ]
     context.long = False
     context.short = False
-    start = datetime.datetime(2014,1,3)
-    end = datetime.datetime(2017,8,1)
-    sec_list = SecurityList(tickers=tickers)
-    sec_list.loadData(start,end)
+
+    # train set start and end
+    start = datetime.datetime(2013,1,3)
+    train_end = datetime.datetime(2016,1,1)
+
+    # backtest end
+    bt_end = datetime.datetime(2017,11,3)
+
+    sec_list = SecurityList(tickers = tickers, start = start, end = train_end)
+    sec_list.loadData(start, bt_end)
 
     # Factors used to maintain mean reverting behavior
     # of prices as time goes on and stocks go through
@@ -51,7 +57,7 @@ def initialize(context):
     context.divFactors = sec_list.getAdjFactors()
     context.splits = sec_list.getSplits()
 
-    context.leverage = 10
+    context.leverage = 1
     context.share_num = 0
     context.diff_thresh = 100
     schedule_function(adjust_splits_dividends, date_rules.every_day(), time_rules.market_open())
@@ -135,8 +141,8 @@ def main(Enter, Exit):
     zEnter = Enter
     zExit = Exit
     eastern = pytz.timezone('US/Eastern')        
-    start= datetime.datetime(2014,1,4,0,0,0,0,eastern)
-    end = datetime.datetime(2017,8,1,0,0,0,0,eastern)
+    start= datetime.datetime(2016,1,2,0,0,0,0,eastern)
+    end = datetime.datetime(2017,11,3,0,0,0,0,eastern) # this is the last good date for quandl dataset
     results = run_algorithm(start=start,end=end,initialize=initialize,capital_base=10000,bundle='quantopian-quandl')
     plot_results(results)
     return results.sharpe[-1]
