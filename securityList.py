@@ -22,7 +22,7 @@ class SecurityList():
     def __init__(self, tickers, start = None, end = None):
 
         self.tickers = tickers
-        self.data = pd.DataFrame(columns=self.tickers)
+        self.adj_close = pd.DataFrame(columns=self.tickers)
         self.volume = pd.DataFrame(columns=self.tickers)
         self.split = pd.DataFrame(columns=self.tickers)
         self.div = pd.DataFrame(columns=self.tickers)
@@ -31,10 +31,6 @@ class SecurityList():
         # Hedge ratio start and end
         self.start = start
         self.end = end
-
-    def importData(self,data):
-
-        self.data = data
 
     def loadData(self, start = None, end = None, minLength = 300):
 
@@ -48,11 +44,11 @@ class SecurityList():
         """
 
         try: 
-            self.data,self.volume,self.split,self.div,self.close = pickle.load(open('WIKIdata.pickle','rb'))
+            self.adj_close,self.volume,self.split,self.div,self.close = pickle.load(open('WIKIdata.pickle','rb'))
         except FileNotFoundError:
             print("File not found! Running downloadQuandl()")
             self.downloadQuandl()
-        self.data = self.data[self.tickers][start:end]
+        self.adj_close = self.adj_close[self.tickers][start:end]
         self.volume = self.volume[self.tickers][start:end]
         self.split = self.split[self.tickers][start:end]
         self.div = self.div[self.tickers][start:end]
@@ -60,27 +56,29 @@ class SecurityList():
         if(self.checkNaN()):
             start = self.findEarliest()
             print('No data for start time. Using %s instead' % start)
-            self.data = self.data[start:].dropna(axis='columns')
+            self.adj_close = self.adj_close[start:].dropna(axis='columns')
             self.volume = self.volume[start:].dropna(axis='columns')
             self.split = self.split[start:].dropna(axis='columns')
             self.div = self.div[start:].dropna(axis='columns')
             self.close = self.close[start:].dropna(axis='columns')
-        print('Resulting tickers: %s' % self.data.columns)
+        print('Resulting tickers: %s' % self.adj_close.columns)
 
     def checkNaN(self):
 
-        columns = self.data.columns[self.data.isna().all()].tolist()
-        for col in columns:
-            self.downloadSecurity(col)            
-        columns = self.data.columns[self.data.isna().any()].tolist()
-        if(columns):
-            self.fillNaN(columns)
-            columns = self.data.columns[self.data.isna().any()].tolist()
+        check_list = [self.adj_close, self.volume, self.split, self.div, self.close]
+        for item in check_list:
+            columns = item.columns[item.isna().all()].tolist()
+            for col in columns:
+                self.downloadSecurity(col)            
+            columns = item.columns[item.isna().any()].tolist()
             if(columns):
-                return True
+                self.fillNaN(columns, item)
+                columns = item.columns[item.isna().any()].tolist()
+                if(columns):
+                    return True
         return False
 
-    def fillNaN(self, columns):
+    def fillNaN(self, columns, item):
 
         """
         Fills stray NaN values by setting it to the previous days value
@@ -88,11 +86,11 @@ class SecurityList():
         """
 
         for col in columns:
-            index = np.argwhere(np.isnan(self.data[col]))
-            self.data[col][index] = self.data[col][index - 1]
+            index = np.argwhere(np.isnan(item[col]))
+            item[col][index] = item[col][index - 1]
 
     def findEarliest(self):
-        return self.data[self.data.count().idxmin()].first_valid_index()
+        return self.adj_close[self.adj_close.count().idxmin()].first_valid_index()
 
     def downloadSecurity(self, sec):
 
@@ -106,19 +104,19 @@ class SecurityList():
     def downloadSecurityUtil(self, sec):
 
         print("downloading "+sec)
-        all_data, all_volume, all_split, all_div, all_close = pickle.load(open('WIKIdata.pickle','rb'))
+        all_adj_close, all_volume, all_split, all_div, all_close = pickle.load(open('WIKIdata.pickle','rb'))
         a = quandl.get('WIKI/'+sec)
-        self.data[sec] = a['Adj. Close']
+        self.adj_close[sec] = a['Adj. Close']
         self.volume[sec] = a['Volume']
         self.split[sec] = a['Split Ratio']
         self.div[sec] = a['Ex-Dividend']
         self.close[sec] = a['Close']
-        all_data[sec] = a['Adj. Close']
+        all_adj_close[sec] = a['Adj. Close']
         all_volume[sec] = a['Volume']
         all_split[sec] = a['Split Ratio']
         all_div[sec] = a['Ex-Dividend']
         all_close[sec] = a['Close']
-        pickle.dump((all_data, all_volume, all_split, all_div, all_close),open('WIKIdata.pickle','wb'))
+        pickle.dump((all_adj_close, all_volume, all_split, all_div, all_close),open('WIKIdata.pickle','wb'))
 
     def downloadQuandl(self):
 
@@ -133,7 +131,7 @@ class SecurityList():
         tickers = listify(tickers)
         for sec in tickers:
             self.downloadSecurity(sec)
-        pickle.dump((self.data,self.volume,self.split,self.div,self.close),open('WIKIdata.pickle','wb'))
+        pickle.dump((self.adjClose,self.volume,self.split,self.div,self.close),open('WIKIdata.pickle','wb'))
 
     def genTimeSeries(self):
 
@@ -143,7 +141,7 @@ class SecurityList():
         """
 
         eig = self.genHedgeRatio()
-        ts = np.dot(self.data,eig)
+        ts = np.dot(self.adj_close,eig)
         return ts
 
     def genHedgeRatio(self):
@@ -156,14 +154,14 @@ class SecurityList():
 
         # self.start and self.end are the time period to calculate the 
         # hedge ratio for
-        data_eig = self.data[self.start:self.end]
-        ts_row, ts_col = data_eig.shape
+        adj_close_eig = self.adj_close[self.start:self.end]
+        ts_row, ts_col = adj_close_eig.shape
         matrix = np.zeros((ts_row,ts_col))
-        for i, sec in enumerate(data_eig):
-            matrix[:,i] = data_eig[sec]
+        for i, sec in enumerate(adj_close_eig):
+            matrix[:,i] = adj_close_eig[sec]
         return matrix
 
-    def getVolume(self):
+    def get_volume(self):
 
         return self.volume
 
@@ -171,16 +169,20 @@ class SecurityList():
 
         return self.split
 
-    def getDiv(self):
+    def getDivs(self):
 
         return self.div
+
+    def get_adj_close(self):
+
+        return self.adj_close
 
     def getAdjFactors(self):
 
         temp = self.div.copy()
         temp[temp != 0] = 1
-        close = self.close*temp
-        adj_factors = self.div+close
+        close = self.close * temp
+        adj_factors = self.div + close
         close[close == 0] = 1
         adj_factors /= close
         adj_factors[adj_factors == 0] = 1
@@ -190,7 +192,7 @@ class SecurityList():
 
         split = self.split[self.start:self.end].product()
         eig = self.genHedgeRatio()
-        adj = eig/split
+        adj = eig / split
         return adj
 
     def adjDividends(self):
