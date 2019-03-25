@@ -1,6 +1,7 @@
 import urllib3
 from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
+import pickle
 
 
 def scrape_list():
@@ -64,3 +65,14 @@ def plot_results(results):
     plt.plot(results.max_leverage)
     plt.title('Max Leverage')
     plt.show()
+
+def get_oldest():
+
+    """ 
+
+    Gets the oldest stocks on the S&P500
+
+    """
+
+    adj_close, volume, split, div, close = pickle.load(open('WIKIdata.pickle','rb'))
+    return adj_close.iloc[0].dropna().index.format()

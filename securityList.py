@@ -28,11 +28,18 @@ class SecurityList():
         self.div = pd.DataFrame(columns=self.tickers)
         self.close = pd.DataFrame(columns=self.tickers)
 
-        # Hedge ratio start and end
+    def set_train(self, start, end):
+
+        """
+
+        Set time window for training set
+
+        """
+
         self.start = start
         self.end = end
 
-    def loadData(self, start = None, end = None, minLength = 300):
+    def load_data(self, start = None, end = None):
 
         """
         Loads data for tickers from
@@ -148,6 +155,13 @@ class SecurityList():
 
         matrix = self.genMatrix()
         results = jh.coint_johansen(matrix,0,1)
+        #print(results.lr1[-1])
+        #print(results.cvt[-1][-1])
+        #print(results.lr2[-1])
+        #print(results.cvm[-1][-1])
+        #print(self.adj_close)
+        #if((results.lr1[-1] >= results.cvt[-1][-1]) and 
+        #        (results.lr2[-1] >= results.cvm[-1][-1])):
         return results.evec[:,0]
 
     def genMatrix(self):
