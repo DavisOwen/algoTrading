@@ -8,18 +8,17 @@ time series, and other useful functions
 import quandl
 import numpy as np
 import pandas as pd
-import datetime
 import statsmodels.tsa.vector_ar.vecm as jh
-import matplotlib.pyplot as plt
 import pickle
 import sys
 from utils import scrape_list, listify
 
 quandl.ApiConfig.api_key = 'AfS6bPzj1CsRFyYxCcvz'
 
+
 class SecurityList():
 
-    def __init__(self, tickers, start = None, end = None):
+    def __init__(self, tickers, start=None, end=None):
 
         self.tickers = tickers
         self.adj_close = pd.DataFrame(columns=self.tickers)
@@ -29,7 +28,6 @@ class SecurityList():
         self.close = pd.DataFrame(columns=self.tickers)
 
     def set_train(self, start, end):
-
         """
 
         Set time window for training set
@@ -39,19 +37,19 @@ class SecurityList():
         self.start = start
         self.end = end
 
-    def load_data(self, start = None, end = None):
-
+    def load_data(self, start=None, end=None):
         """
         Loads data for tickers from
-        start to end. If stocks don't 
-        have data from start, will 
-        load data from first available 
+        start to end. If stocks don't
+        have data from start, will
+        load data from first available
         date
 
         """
 
-        try: 
-            self.adj_close,self.volume,self.split,self.div,self.close = pickle.load(open('WIKIdata.pickle','rb'))
+        try:
+            self.adj_close, self.volume, self.split, self.div, self.close = \
+                pickle.load(open('WIKIdata.pickle', 'rb'))
         except FileNotFoundError:
             print("File not found! Running downloadQuandl()")
             self.downloadQuandl()
@@ -72,11 +70,12 @@ class SecurityList():
 
     def checkNaN(self):
 
-        check_list = [self.adj_close, self.volume, self.split, self.div, self.close]
+        check_list = [self.adj_close, self.volume,
+                      self.split, self.div, self.close]
         for item in check_list:
             columns = item.columns[item.isna().all()].tolist()
             for col in columns:
-                self.downloadSecurity(col)            
+                self.downloadSecurity(col)
             columns = item.columns[item.isna().any()].tolist()
             if(columns):
                 self.fillNaN(columns, item)
@@ -86,7 +85,6 @@ class SecurityList():
         return False
 
     def fillNaN(self, columns, item):
-
         """
         Fills stray NaN values by setting it to the previous days value
 
@@ -97,7 +95,9 @@ class SecurityList():
             item[col][index] = item[col][index - 1]
 
     def findEarliest(self):
-        return self.adj_close[self.adj_close.count().idxmin()].first_valid_index()
+        return self.adj_close[
+            self.adj_close.count().idxmin()
+        ].first_valid_index()
 
     def downloadSecurity(self, sec):
 
@@ -111,7 +111,8 @@ class SecurityList():
     def downloadSecurityUtil(self, sec):
 
         print("downloading "+sec)
-        all_adj_close, all_volume, all_split, all_div, all_close = pickle.load(open('WIKIdata.pickle','rb'))
+        all_adj_close, all_volume, all_split, all_div, all_close = pickle.load(
+            open('WIKIdata.pickle', 'rb'))
         a = quandl.get('WIKI/'+sec)
         self.adj_close[sec] = a['Adj. Close']
         self.volume[sec] = a['Volume']
@@ -123,12 +124,12 @@ class SecurityList():
         all_split[sec] = a['Split Ratio']
         all_div[sec] = a['Ex-Dividend']
         all_close[sec] = a['Close']
-        pickle.dump((all_adj_close, all_volume, all_split, all_div, all_close),open('WIKIdata.pickle','wb'))
+        pickle.dump((all_adj_close, all_volume, all_split, all_div,
+                     all_close), open('WIKIdata.pickle', 'wb'))
 
     def downloadQuandl(self):
-
         """
-        Downloads all quandl data for 
+        Downloads all quandl data for
         all stocks in SP500 from all time,
         and stores in WIKIdata.pickle
 
@@ -138,41 +139,41 @@ class SecurityList():
         tickers = listify(tickers)
         for sec in tickers:
             self.downloadSecurity(sec)
-        pickle.dump((self.adjClose,self.volume,self.split,self.div,self.close),open('WIKIdata.pickle','wb'))
+        pickle.dump((self.adjClose, self.volume, self.split,
+                     self.div, self.close), open('WIKIdata.pickle', 'wb'))
 
     def genTimeSeries(self):
-
         """
         Generate Time Series using johansen test
 
         """
 
         eig = self.genHedgeRatio()
-        ts = np.dot(self.adj_close,eig)
+        ts = np.dot(self.adj_close, eig)
         return ts
 
     def genHedgeRatio(self):
 
         matrix = self.genMatrix()
-        results = jh.coint_johansen(matrix,0,1)
-        #print(results.lr1[-1])
-        #print(results.cvt[-1][-1])
-        #print(results.lr2[-1])
-        #print(results.cvm[-1][-1])
-        #print(self.adj_close)
-        #if((results.lr1[-1] >= results.cvt[-1][-1]) and 
+        results = jh.coint_johansen(matrix, 0, 1)
+        # print(results.lr1[-1])
+        # print(results.cvt[-1][-1])
+        # print(results.lr2[-1])
+        # print(results.cvm[-1][-1])
+        # print(self.adj_close)
+        # if((results.lr1[-1] >= results.cvt[-1][-1]) and
         #        (results.lr2[-1] >= results.cvm[-1][-1])):
-        return results.evec[:,0]
+        return results.evec[:, 0]
 
     def genMatrix(self):
 
-        # self.start and self.end are the time period to calculate the 
+        # self.start and self.end are the time period to calculate the
         # hedge ratio for
         adj_close_eig = self.adj_close[self.start:self.end]
         ts_row, ts_col = adj_close_eig.shape
-        matrix = np.zeros((ts_row,ts_col))
+        matrix = np.zeros((ts_row, ts_col))
         for i, sec in enumerate(adj_close_eig):
-            matrix[:,i] = adj_close_eig[sec]
+            matrix[:, i] = adj_close_eig[sec]
         return matrix
 
     def get_volume(self):

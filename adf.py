@@ -19,7 +19,6 @@ import pprint
 import statsmodels.tsa.stattools as ts
 import statsmodels.formula.api as sm
 import sys
-import pytz
 
 
 def test_stocks():
@@ -27,9 +26,8 @@ def test_stocks():
     ticker1 = sys.argv[1]
     ticker2 = sys.argv[2]
 
-    start = datetime.datetime(1994,9,29)
-    end = datetime.datetime(2017,4,5)
-    
+    start = datetime.datetime(1994, 9, 29)
+    end = datetime.datetime(2017, 4, 5)
 
     gld = web.DataReader(ticker1, "yahoo", start, end)
     gdx = web.DataReader(ticker2, "yahoo", start, end)
@@ -39,13 +37,13 @@ def test_stocks():
     df[ticker2] = gdx["Adj Close"]
 
     # Plot the two time series
-    plot_price_series(df, ticker1, ticker2,start,end)
+    plot_price_series(df, ticker1, ticker2, start, end)
 
     # Display a scatter plot of the two time series
     plot_scatter_series(df, ticker1, ticker2)
 
     # Calculate optimal hedge ratio "beta"
-    res = sm.ols(formula = ticker1 + " ~ " + ticker2, data = df).fit()
+    res = sm.ols(formula=ticker1 + " ~ " + ticker2, data=df).fit()
     beta = res.params[1]
 
     # Calculate the residuals of the linear combination
@@ -60,7 +58,7 @@ def test_stocks():
     print(beta_hr)
 
 
-def plot_price_series(df, ts1, ts2,start,end):
+def plot_price_series(df, ts1, ts2, start, end):
     months = mdates.MonthLocator()  # every month
     fig, ax = plt.subplots()
     ax.plot(df.index, df[ts1], label=ts1)
@@ -77,6 +75,7 @@ def plot_price_series(df, ts1, ts2,start,end):
     plt.legend()
     plt.show()
 
+
 def plot_scatter_series(df, ts1, ts2):
     plt.xlabel('%s Price ($)' % ts1)
     plt.ylabel('%s Price ($)' % ts2)
@@ -84,7 +83,8 @@ def plot_scatter_series(df, ts1, ts2):
     plt.scatter(df[ts1], df[ts2])
     plt.show()
 
-def plot_residuals(df,start,end):
+
+def plot_residuals(df, start, end):
     months = mdates.MonthLocator()  # every month
     fig, ax = plt.subplots()
     ax.plot(df.index, df["res"], label="Residuals")
@@ -102,5 +102,6 @@ def plot_residuals(df,start,end):
     plt.plot(df["res"])
     plt.show()
 
-if __name__== "__main__":
+
+if __name__ == "__main__":
     test_stocks()
