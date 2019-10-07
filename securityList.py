@@ -51,8 +51,8 @@ class SecurityList():
             self.adj_close, self.volume, self.split, self.div, self.close = \
                 pickle.load(open('WIKIdata.pickle', 'rb'))
         except FileNotFoundError:
-            print("File not found! Running downloadQuandl()")
-            self.downloadQuandl()
+            print("File not found! Running downloadTickersQuandl()")
+            self.downloadTickersQuandl()
         self.adj_close = self.adj_close[self.tickers][start:end]
         self.volume = self.volume[self.tickers][start:end]
         self.split = self.split[self.tickers][start:end]
@@ -126,6 +126,17 @@ class SecurityList():
         all_close[sec] = a['Close']
         pickle.dump((all_adj_close, all_volume, all_split, all_div,
                      all_close), open('WIKIdata.pickle', 'wb'))
+
+    def downloadTickersQuandl(self):
+        """
+        Downloads quandl data only for
+        stocks defined in self.tickers
+        """
+
+        for sec in self.tickers:
+            self.downloadSecurity(sec)
+        pickle.dump((self.adjClose, self.volume, self.split,
+                     self.div, self.close), open('WIKIdata.pickle', 'wb'))
 
     def downloadQuandl(self):
         """
