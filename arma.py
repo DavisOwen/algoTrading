@@ -1,4 +1,4 @@
-#!algotrading/bin/python3
+#!/usr/bin/env python
 '''
 Tests ARMA model using train-splits
 

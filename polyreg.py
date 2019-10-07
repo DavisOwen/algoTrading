@@ -1,4 +1,4 @@
-#!algotrading/bin/python3
+#!/usr/bin/env python
 
 '''
 Runs a polynomial regression on a time series and tests

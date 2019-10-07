@@ -1,4 +1,4 @@
-#!algotrading/bin/python3
+#!/usr/bin/env python
 
 '''
 Augmented Dickey Fuller Test for two stocks

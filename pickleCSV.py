@@ -1,4 +1,4 @@
-#!algotrading/bin/python
+#!/usr/bin/env python
 
 '''
 converts local csv file of stock prices

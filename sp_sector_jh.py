@@ -1,4 +1,4 @@
-#!algotrading/bin/python
+#!/usr/bin/env python
 
 '''
 Create a pandas dataframe containing columns
