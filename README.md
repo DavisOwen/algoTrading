@@ -1,11 +1,21 @@
 # algoTrading
 
-Davis Owen and his adventures into algorithmic trading using the popular open source backtester, zipline
+I've decided to make my own backtester. I'll simply be using venv as an environment.
 
-Make sure you have Anaconda/Miniconda installed
+create env 
 
-`conda env create -f environment.yml`
+`python3 -m venv algotrading`
 
-To activate environment:
+activate env
 
-`conda activate algotrading`
+`source algotrading/bin/activate`
+
+install requirements
+
+`pip install -r requirements.txt`
+
+Following the template for event driven backtester development outlined in this series
+
+https://www.quantstart.com/articles/Event-Driven-Backtesting-with-Python-Part-I
+
+TODO: add sphinx for documentation

@@ -18,7 +18,7 @@ quandl.ApiConfig.api_key = 'AfS6bPzj1CsRFyYxCcvz'
 
 class SecurityList():
 
-    def __init__(self, tickers, start=None, end=None):
+    def __init__(self, tickers):
 
         self.tickers = tickers
         self.adj_close = pd.DataFrame(columns=self.tickers)
@@ -202,6 +202,10 @@ class SecurityList():
     def get_adj_close(self):
 
         return self.adj_close
+
+    def get_close(self):
+
+        return self.close
 
     def getAdjFactors(self):
 
