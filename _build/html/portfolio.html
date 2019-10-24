@@ -1,0 +1,230 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>portfolio &#8212; algotrading 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="strategy" href="strategy.html" />
+    <link rel="prev" title="performance" href="performance.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-portfolio">
+<span id="portfolio"></span><h1>portfolio<a class="headerlink" href="#module-portfolio" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="portfolio.NaivePortfolio">
+<em class="property">class </em><code class="sig-prename descclassname">portfolio.</code><code class="sig-name descname">NaivePortfolio</code><span class="sig-paren">(</span><em class="sig-param">bars</em>, <em class="sig-param">events</em>, <em class="sig-param">start_date</em>, <em class="sig-param">initial_capital=100000.0</em><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio" title="Permalink to this definition">¶</a></dt>
+<dd><p>The NaivePortfolio object is designed to send orders to
+a brokerage object witha constant quantity size blindly,
+i.e. wihtout any risk management or position sizing. It is
+used to test simpler strategies such as BuyAndHoldStrategy</p>
+<dl class="method">
+<dt id="portfolio.NaivePortfolio.construct_all_holdings">
+<code class="sig-name descname">construct_all_holdings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.construct_all_holdings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs the holdings list using the start_date
+to determine when the time index will begin.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="portfolio.NaivePortfolio.construct_all_positions">
+<code class="sig-name descname">construct_all_positions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.construct_all_positions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs the positions list using the start_date
+to determine when the time index will begin</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="portfolio.NaivePortfolio.construct_current_holdings">
+<code class="sig-name descname">construct_current_holdings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.construct_current_holdings" title="Permalink to this definition">¶</a></dt>
+<dd><p>This constructs the dictionary which will hold the instantaneous
+value of the portfolio across all symbols.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="portfolio.NaivePortfolio.create_equity_curve_dataframe">
+<code class="sig-name descname">create_equity_curve_dataframe</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.create_equity_curve_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a pandas DataFrame from the all_holdings
+list of dictionaries.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="portfolio.NaivePortfolio.generate_naive_order">
+<code class="sig-name descname">generate_naive_order</code><span class="sig-paren">(</span><em class="sig-param">signal</em><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.generate_naive_order" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simply transacts an OrderEvent object as a constant quantity
+sizing of the signal object, without risk management or
+position sizing considerations.</p>
+<p>Parameters:
+signal = The SignalEvent signal information</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="portfolio.NaivePortfolio.output_summary_stats">
+<code class="sig-name descname">output_summary_stats</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.output_summary_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a list of summary statistics for the portfolio such
+as Sharpe Ratio and drawdown information.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="portfolio.NaivePortfolio.update_fill">
+<code class="sig-name descname">update_fill</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.update_fill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the portfolio current positions and holdings
+from a FillEvent.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="portfolio.NaivePortfolio.update_holdings_from_fill">
+<code class="sig-name descname">update_holdings_from_fill</code><span class="sig-paren">(</span><em class="sig-param">fill</em><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.update_holdings_from_fill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a FillEvent object and updates the holdings matrix
+to reflect the holdings value.</p>
+<p>Parameters:
+fill - The FillEvent object to update the holdings with.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="portfolio.NaivePortfolio.update_positions_from_fill">
+<code class="sig-name descname">update_positions_from_fill</code><span class="sig-paren">(</span><em class="sig-param">fill</em><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.update_positions_from_fill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a FillEvent object and updates the position matrix
+to reflect the new position</p>
+<p>Parameters:
+fill - The FillEvent object to update the positions with.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="portfolio.NaivePortfolio.update_signal">
+<code class="sig-name descname">update_signal</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.update_signal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Acts on a SignalEvent to generate new orders
+based on the portfolio logic.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="portfolio.NaivePortfolio.update_timeindex">
+<code class="sig-name descname">update_timeindex</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.update_timeindex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a new record to the positions matrix for the current
+market data bar. This reflects the PREVIOUS bar, i.e. all
+current market data at this stage is known (OLHCVI).</p>
+<p>Makes use of a MarketEvent form the events queue.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="portfolio.Portfolio">
+<em class="property">class </em><code class="sig-prename descclassname">portfolio.</code><code class="sig-name descname">Portfolio</code><a class="headerlink" href="#portfolio.Portfolio" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Portfolio class handles the positions and market
+value of all instruments at a resolution of a “bar”,
+i.e. secondly, minutely, 5-min, 30-min, 60 min or EOD.</p>
+<dl class="method">
+<dt id="portfolio.Portfolio.update_fill">
+<em class="property">abstract </em><code class="sig-name descname">update_fill</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.Portfolio.update_fill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the portfolio current positions and holdings
+from a FillEvent</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="portfolio.Portfolio.update_signal">
+<em class="property">abstract </em><code class="sig-name descname">update_signal</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.Portfolio.update_signal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Acts on a SignalEvent to generate new orders
+based on the portfolio logic.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">algotrading</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="data.html">data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="event.html">event</a></li>
+<li class="toctree-l1"><a class="reference internal" href="execution.html">execution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">performance</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">portfolio</a></li>
+<li class="toctree-l1"><a class="reference internal" href="strategy.html">strategy</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="performance.html" title="previous chapter">performance</a></li>
+      <li>Next: <a href="strategy.html" title="next chapter">strategy</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Davis Owen.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/portfolio.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

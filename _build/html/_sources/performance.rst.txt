@@ -1,0 +1,6 @@
+===========
+performance
+===========
+
+.. automodule:: performance
+   :members:

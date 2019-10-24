@@ -18,4 +18,8 @@ Following the template for event driven backtester development outlined in this 
 
 https://www.quantstart.com/articles/Event-Driven-Backtesting-with-Python-Part-I
 
-TODO: add sphinx for documentation
+Sphinx documentation:
+
+make .rst for any new modules and run make html to regenerate docs in _build/html/index.html.
+
+Will autogenerate documentation based on properly formatted comments.
