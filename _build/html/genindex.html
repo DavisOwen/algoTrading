@@ -35,8 +35,7 @@
 <h1 id="index">Index</h1>
 
 <div class="genindex-jumpbox">
- <a href="#B"><strong>B</strong></a>
- | <a href="#C"><strong>C</strong></a>
+ <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
  | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
@@ -46,35 +45,22 @@
  | <a href="#N"><strong>N</strong></a>
  | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
+ | <a href="#Q"><strong>Q</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#U"><strong>U</strong></a>
  
 </div>
-<h2 id="B">B</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="strategy.html#strategy.BuyAndHoldStrategy">BuyAndHoldStrategy (class in strategy)</a>
-</li>
-  </ul></td>
-</tr></table>
-
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="event.html#event.FillEvent.calculate_ib_commission">calculate_ib_commission() (event.FillEvent method)</a>
 </li>
-      <li><a href="strategy.html#strategy.BuyAndHoldStrategy.calculate_signals">calculate_signals() (strategy.BuyAndHoldStrategy method)</a>
-
-      <ul>
-        <li><a href="strategy.html#strategy.Strategy.calculate_signals">(strategy.Strategy method)</a>
-</li>
-      </ul></li>
       <li><a href="portfolio.html#portfolio.NaivePortfolio.construct_all_holdings">construct_all_holdings() (portfolio.NaivePortfolio method)</a>
+</li>
+      <li><a href="portfolio.html#portfolio.NaivePortfolio.construct_all_positions">construct_all_positions() (portfolio.NaivePortfolio method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="portfolio.html#portfolio.NaivePortfolio.construct_all_positions">construct_all_positions() (portfolio.NaivePortfolio method)</a>
-</li>
       <li><a href="portfolio.html#portfolio.NaivePortfolio.construct_current_holdings">construct_current_holdings() (portfolio.NaivePortfolio method)</a>
 </li>
       <li><a href="performance.html#performance.create_drawdowns">create_drawdowns() (in module performance)</a>
@@ -133,12 +119,16 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="portfolio.html#portfolio.NaivePortfolio.generate_naive_order">generate_naive_order() (portfolio.NaivePortfolio method)</a>
 </li>
+      <li><a href="data.html#data.QuandlDataHandler.get_adj_close">get_adj_close() (data.QuandlDataHandler method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="data.html#data.DataHandler.get_latest_bars">get_latest_bars() (data.DataHandler method)</a>
 
       <ul>
         <li><a href="data.html#data.HistoricCSVDataHandler.get_latest_bars">(data.HistoricCSVDataHandler method)</a>
+</li>
+        <li><a href="data.html#data.QuandlDataHandler.get_latest_bars">(data.QuandlDataHandler method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -196,18 +186,22 @@
   </ul></td>
 </tr></table>
 
+<h2 id="Q">Q</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="data.html#data.QuandlDataHandler">QuandlDataHandler (class in data)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="event.html#event.SignalEvent">SignalEvent (class in event)</a>
 </li>
-      <li><a href="execution.html#execution.SimulatedExecutionHandler">SimulatedExecutionHandler (class in execution)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="strategy.html#strategy.Strategy">Strategy (class in strategy)</a>
-</li>
-      <li><a href="strategy.html#module-strategy">strategy (module)</a>
+      <li><a href="execution.html#execution.SimulatedExecutionHandler">SimulatedExecutionHandler (class in execution)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -219,6 +213,8 @@
 
       <ul>
         <li><a href="data.html#data.HistoricCSVDataHandler.update_bars">(data.HistoricCSVDataHandler method)</a>
+</li>
+        <li><a href="data.html#data.QuandlDataHandler.update_bars">(data.QuandlDataHandler method)</a>
 </li>
       </ul></li>
       <li><a href="portfolio.html#portfolio.NaivePortfolio.update_fill">update_fill() (portfolio.NaivePortfolio method)</a>

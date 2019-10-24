@@ -1,10 +1,17 @@
 import datetime
 import os
+import pickle
+import logging
+import quandl
 import pandas as pd
 
 from abc import ABCMeta, abstractmethod
 
 from event import MarketEvent
+
+logger = logging.getLogger("backtester")
+logger.setLevel(logging.DEBUG)
+quandl.ApiConfig.api_key = 'AfS6bPzj1CsRFyYxCcvz'
 
 
 class DataHandler(object):
@@ -123,7 +130,8 @@ class HistoricCSVDataHandler(DataHandler):
         try:
             bars_list = self.latest_symbol_data[symbol]
         except KeyError:
-            print("That symbol is not available in the historical data set.")
+            logger.error(
+                "That symbol is not available in the historical data set.")
         else:
             return bars_list[-N:]
 
@@ -141,3 +149,113 @@ class HistoricCSVDataHandler(DataHandler):
                 if bar is not None:
                     self.latest_symbol_data[s].append(bar)
         self.events.put(MarketEvent())
+
+
+class QuandlDataHandler(DataHandler):
+    """
+    DataHandler class that pulls data from quandl using supplied tickers.
+    If data exists in pickle files, will load from pickle, if they do
+    not exist, will save data to pickle file
+
+    Data format for quandl is:
+    index - (pd.Timestamp) date
+    data - (float) Open, High, Low, Close, Volume, Ex-Dividend, Split-Ratio,
+    Adj. Open, Adj. High, Adj. Low, Adj. Close, Adj. Volume
+    """
+    def __init__(self, events, pickle_dir, symbol_list):
+        """
+        Initialises the quandl data handler.
+
+        Parameters:
+        events - events queue object
+        pickle_dir - directory to find and save pickle objects
+        symbol_list - list of symbols in backtest
+        """
+        self.events = events
+        self.pickle_dir = pickle_dir
+        self.symbol_list = symbol_list
+
+        self.symbol_data = {}
+        self.latest_symbol_data = {}
+        self.continue_backtest = True
+
+        self._get_data_from_pickle()
+
+    def _get_data_from_pickle(self):
+        """
+        Tries to load data from the pickle file, and if
+        not found will run _download_quandl_ticker() to download
+        the security from quandl and store it in pickle format
+        """
+        for sec in self.symbol_list:
+            try:
+                self.symbol_data[sec] = pickle.load(open(os.path.join(
+                                            self.pickle_dir,
+                                            "{sec}.pickle".format(sec))))
+            except FileNotFoundError:
+                logger.info("File not found! Running download_quandl_ticker()")
+                self.symbol_data[sec] = self._download_quandl_ticker(sec)
+            self.latest_symbol_data[sec] = []
+
+    def _downlaod_quandl_ticker(self, sec):
+        """
+        Downloads security from quandl and saves to pickle_dir
+
+        Parameters:
+        sec - security ticker
+        """
+        logger.info("Downloading {sec}".format(sec))
+        data = quandl.get("WIKI/{sec}".format(sec))
+        pickle.dump(data, open(os.path.join(
+            self.pickle_dir, "{sec}.pickle".format(sec))))
+        return data
+
+    def _get_new_bar(self, symbol):
+        """
+        Returns the latest bar from the data feed as a tuple of
+        (symbol, datetime, open, low, high, close, volume).
+        """
+        for index, row in self.symbol_data[symbol].iterrows():
+            yield tuple([symbol,
+                         index,
+                         row['Open'], row['Low'],
+                         row['High'], row['Close'], row['Volume']])
+
+    def get_latest_bars(self, symbol, N=1):
+        """
+        Returns the last N bars from the latest_symbol list,
+        or N-k if less available.
+        """
+        try:
+            bars_list = self.latest_symbol_data[symbol]
+        except KeyError:
+            logger.error(
+                "That symbol is not available in the historical data set.")
+        else:
+            return bars_list[-N:]
+
+    def update_bars(self):
+        """
+        Pushes the latest bar to the latest_symbol_data structure
+        for all symbols in the symbol list.
+        """
+        for s in self.symbol_list:
+            try:
+                bar = self._get_new_bars(s).next()
+            except StopIteration:
+                self.continue_backtest = False
+            else:
+                if bar is not None:
+                    self.latest_symbol_data[s].append(bar)
+        self.events.put(MarketEvent())
+
+    def get_adj_close(self):
+        """
+        gets adj_close data for all tickers provided for
+        full time period
+        """
+        adj_close_df = pd.DataFrame(index=self.symbol_data.index,
+                                    columns=self.symbol_list)
+        for sec in self.symbol_list:
+            adj_close_df[sec] = self.symbol_data[sec]['Adj. Close']
+        return adj_close_df

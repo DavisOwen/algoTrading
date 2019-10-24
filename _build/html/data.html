@@ -83,6 +83,39 @@ for all symbols in the symbol list.</p>
 
 </dd></dl>
 
+<dl class="class">
+<dt id="data.QuandlDataHandler">
+<em class="property">class </em><code class="sig-prename descclassname">data.</code><code class="sig-name descname">QuandlDataHandler</code><span class="sig-paren">(</span><em class="sig-param">events</em>, <em class="sig-param">pickle_dir</em>, <em class="sig-param">symbol_list</em><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlDataHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>DataHandler class that pulls data from quandl using supplied tickers.
+If data exists in pickle files, will load from pickle, if they do
+not exist, will save data to pickle file</p>
+<p>Data format for quandl is:
+index - (pd.Timestamp) date
+data - (float) Open, High, Low, Close, Volume, Ex-Dividend, Split-Ratio,
+Adj. Open, Adj. High, Adj. Low, Adj. Close, Adj. Volume</p>
+<dl class="method">
+<dt id="data.QuandlDataHandler.get_adj_close">
+<code class="sig-name descname">get_adj_close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlDataHandler.get_adj_close" title="Permalink to this definition">¶</a></dt>
+<dd><p>gets adj_close data for all tickers provided for
+full time period</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.QuandlDataHandler.get_latest_bars">
+<code class="sig-name descname">get_latest_bars</code><span class="sig-paren">(</span><em class="sig-param">symbol</em>, <em class="sig-param">N=1</em><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlDataHandler.get_latest_bars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the last N bars from the latest_symbol list,
+or N-k if less available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.QuandlDataHandler.update_bars">
+<code class="sig-name descname">update_bars</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlDataHandler.update_bars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pushes the latest bar to the latest_symbol_data structure
+for all symbols in the symbol list.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

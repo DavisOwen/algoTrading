@@ -1,3 +1,6 @@
+import numpy as np
+import statsmodels.tsa.vector_ar.vecm as jh
+
 from abc import ABCMeta, abstractmethod
 
 from event import SignalEvent
@@ -79,3 +82,44 @@ class BuyAndHoldStrategy(Strategy):
                         signal = SignalEvent(bars[0][0], bars[0][1], 'LONG')
                         self.events.put(signal)
                         self.bought[s] = True
+
+
+class BollingerBandJohansenStrategy(Strategy):
+    """
+    Uses a Johansen test to create a mean reverting portfolio,
+    and uses bollinger bands strategy using resuling hedge ratios.
+    """
+    def __init__(self, bars, events):
+        """
+        Initialises the bollinger band johansen strategy.
+
+        Parameters:
+        bars - The DataHandler object that provides bar information
+        events - The Event Queue object.
+        """
+        self.bars = bars
+        self.symbol_list = self.bars.symbol_list
+        self.events = events
+
+        self.hedge_ratio = self._generate_hedge_ratio()
+
+    def _generate_matrix(self):
+        """
+        Generates numpy matrix to use for conducting johansen test
+        """
+        adj_close = self.bars.get_adj_close()
+        ts_row, ts_col = adj_close.shape
+        matrix = np.zeros((ts_row, ts_col))
+        for i, sec in enumerate(adj_close):
+            matrix[:, i] = adj_close[sec]
+        return matrix
+
+    def _generate_hedge_ratio(self):
+        """
+        Uses matrix generated from _generate_matrix()
+        to calcuate hedge ratio with coint_johansen
+        statistical test
+        """
+        matrix = self._generate_matrix()
+        results = jh.coint_johansen(matrix, 0, 1)
+        return results.evec[:, 0]
