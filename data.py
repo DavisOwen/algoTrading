@@ -213,13 +213,15 @@ class QuandlDataHandler(DataHandler):
     def _get_new_bar(self, symbol):
         """
         Returns the latest bar from the data feed as a tuple of
-        (symbol, datetime, open, low, high, close, volume).
+        (symbol, datetime, open, low, high, close, volume, dividend events and
+        split events).
         """
         for index, row in self.symbol_data[symbol].iterrows():
             yield tuple([symbol,
                          index,
                          row['Open'], row['Low'],
-                         row['High'], row['Close'], row['Volume']])
+                         row['High'], row['Close'], row['Volume'],
+                         row['Ex-Dividend'], row['Split-Ratio']])
 
     def get_latest_bars(self, symbol, N=1):
         """
@@ -234,6 +236,32 @@ class QuandlDataHandler(DataHandler):
         else:
             return bars_list[-N:]
 
+    def _adjust_data(self, bar):
+        """
+        Checks if there is a dividend for split event
+        on the given bar, and if there is, will adjust
+        all previous bars prices based on split or div
+
+        Paramters:
+        :param bar: bar object to check if there was a split or div event
+        :type bar: tuple
+        """
+        symbol = bar[0]
+        date = bar[1]
+        close = bar[5]
+        ex_div = bar[7]
+        split = bar[8]
+        logger.info("Adjusting data for {symbol} on {date}. Close: {close},\
+                    Ex-Div: {ex_div}, Split-Ratio: {split}"
+                    .format(symbol, date, close, ex_div, split))
+        adj_ratio = split
+        adj_ratio += (close + ex_div) / close
+        if adj_ratio != 1.0:
+            for s in self.symbol_list:
+                for i, bar in enumerate(self.latest_symbol_data[s]):
+                    for j in range(2, 6):
+                        self.latest_symbol_data[s][i][j] /= adj_ratio
+
     def update_bars(self):
         """
         Pushes the latest bar to the latest_symbol_data structure
@@ -246,13 +274,23 @@ class QuandlDataHandler(DataHandler):
                 self.continue_backtest = False
             else:
                 if bar is not None:
+                    self._adjust_data(bar)
                     self.latest_symbol_data[s].append(bar)
         self.events.put(MarketEvent())
 
-    def get_adj_close(self):
+    def get_adj_close(self, start=None, end=None):
         """
         gets adj_close data for all tickers provided for
-        full time period
+        specific time period
+
+        Parameters:
+        :param start: (optional) start date for adj_close data
+        :type start: datetime
+        :param end: (optional) end date for adj_close data
+        :type end: datetime
+
+        :return: adjusted close data
+        :rtype: pd.DataFrame
         """
         adj_close_df = pd.DataFrame(index=self.symbol_data.index,
                                     columns=self.symbol_list)

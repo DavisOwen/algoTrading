@@ -24,19 +24,21 @@ class SignalEvent(Event):
     Handles the event of sending a Signal from a Strategy object.
     This is received by a Portfolio object and acted upon.
     """
-    def __init__(self, symbol, datetime, signal_type):
+    def __init__(self, symbol, datetime, signal_type, strength=None):
         """
         Initialises the SignalEvent.
 
         Parameters:
         symbol - The ticker symbol, e.g. 'GOOG'.
         datetime - The timestamp at which the signal was generated.
-        signal_type - 'LONG' or 'SHORT'.
+        signal_type - 'LONG', 'SHORT', or 'EXIT'.
+        strength - amount of ticker to order
         """
         self.type = 'SIGNAL'
         self.symbol = symbol
         self.datetime = datetime
         self.signal_type = signal_type
+        self.strength = strength
 
 
 class OrderEvent(Event):

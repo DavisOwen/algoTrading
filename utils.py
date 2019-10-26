@@ -1,6 +1,8 @@
 import urllib3
 from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
+import numpy as np
+import statsmodels.tsa.vector_ar.vecm as jh
 import pickle
 
 
@@ -76,3 +78,30 @@ def get_oldest():
     adj_close, volume, split, div, close = pickle.load(
         open('WIKIdata.pickle', 'rb'))
     return adj_close.iloc[0].dropna().index.format()
+
+
+def generate_hedge_ratio(df):
+    """
+    Uses matrix generated from df
+    to calcuate hedge ratio with coint_johansen
+    statistical test
+
+    Parameters:
+    :para df: pd.DataFrame to generate hedge_ratio for
+    :type df: pd.DataFrame
+
+    :return: hedge ratio
+    :rtype: List
+    """
+    ts_row, ts_col = df.shape
+    matrix = np.zeros((ts_row, ts_col))
+    for i, sec in enumerate(df):
+        matrix[:, i] = df[sec]
+    results = jh.coint_johansen(matrix, 0, 1)
+    return results.evec[:, 0]
+
+
+def dot(arr1, arr2):
+    if len(arr1) != len(arr2):
+        return 0
+    return sum(i[0] * i[1] for i in zip(arr1, arr2))

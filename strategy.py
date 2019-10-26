@@ -1,5 +1,5 @@
-import numpy as np
-import statsmodels.tsa.vector_ar.vecm as jh
+from utils import generate_hedge_ratio, dot
+from statistics import mean, stdev
 
 from abc import ABCMeta, abstractmethod
 
@@ -89,37 +89,67 @@ class BollingerBandJohansenStrategy(Strategy):
     Uses a Johansen test to create a mean reverting portfolio,
     and uses bollinger bands strategy using resuling hedge ratios.
     """
-    def __init__(self, bars, events):
+    def __init__(self, bars, events, start_date, enter, exit):
         """
         Initialises the bollinger band johansen strategy.
 
         Parameters:
         bars - The DataHandler object that provides bar information
         events - The Event Queue object.
+        start_date - start_date of backtest
         """
         self.bars = bars
         self.symbol_list = self.bars.symbol_list
         self.events = events
+        self.enter = enter
+        self.exit = exit
 
-        self.hedge_ratio = self._generate_hedge_ratio()
+        self.hedge_ratio = generate_hedge_ratio(
+            self.bars.get_adj_close(end=start_date))
+        self.portfolio_prices = []
+        self.long = False
+        self.short = False
 
-    def _generate_matrix(self):
-        """
-        Generates numpy matrix to use for conducting johansen test
-        """
-        adj_close = self.bars.get_adj_close()
-        ts_row, ts_col = adj_close.shape
-        matrix = np.zeros((ts_row, ts_col))
-        for i, sec in enumerate(adj_close):
-            matrix[:, i] = adj_close[sec]
-        return matrix
+    def _current_portfolio_price(self, price_type):
+        price_type_dict = {'open': 2, 'low': 3, 'high': 4, 'close': 5}
+        price_type = price_type_dict[price_type]
+        prices = []
+        for s in self.symbol_list:
+            prices.append(self.bars.get_latest_bars(s, N=1)[0][price_type])
+        return dot(prices, self.hedge_ratio)
 
-    def _generate_hedge_ratio(self):
+    def _order_portfolio(self, direction):
+        for i, s in enumerate(self.symbol_list):
+            bar = self.bars.get_latest_bars(s, N=1)
+            signal = SignalEvent(bar[0][0], bar[0][1], direction,
+                                 self.hedge_ratio[i])
+            self.events.put(signal)
+
+    def calculate_signals(self, event):
         """
-        Uses matrix generated from _generate_matrix()
-        to calcuate hedge ratio with coint_johansen
-        statistical test
+        Calculates how many standard deviations away
+        the current bar is from rolling average of the portfolio
+
+        Parameters:
+        :param event: Event object
+        :type event: Event
         """
-        matrix = self._generate_matrix()
-        results = jh.coint_johansen(matrix, 0, 1)
-        return results.evec[:, 0]
+        if event.type == "MARKET":
+            price = self._current_portfolio_price()
+            self.portfolio_prices.append(price)
+            rolling_avg = mean(self.portfolio_prices)
+            rolling_std = stdev(self.portfolio_prices)
+            zscore = (price - rolling_avg) / rolling_std
+
+            if self.long and zscore >= self.exit:
+                self._order_portfolio(direction='EXIT')
+                self.long = False
+            elif self.short and zscore <= -self.exit:
+                self._order_portfolio(direction='EXIT')
+                self.short = False
+            elif not self.short and zscore >= self.enter:
+                self._order_portfolio(direction='SHORT')
+                self.short = True
+            elif not self.long and zscore <= -self.enter:
+                self._order_portfolio(direction='LONG')
+                self.long = True
