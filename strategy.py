@@ -89,14 +89,13 @@ class BollingerBandJohansenStrategy(Strategy):
     Uses a Johansen test to create a mean reverting portfolio,
     and uses bollinger bands strategy using resuling hedge ratios.
     """
-    def __init__(self, bars, events, start_date, enter, exit):
+    def __init__(self, bars, events, enter, exit):
         """
         Initialises the bollinger band johansen strategy.
 
         Parameters:
         bars - The DataHandler object that provides bar information
         events - The Event Queue object.
-        start_date - start_date of backtest
         """
         self.bars = bars
         self.symbol_list = self.bars.symbol_list
@@ -104,11 +103,18 @@ class BollingerBandJohansenStrategy(Strategy):
         self.enter = enter
         self.exit = exit
 
-        self.hedge_ratio = generate_hedge_ratio(
-            self.bars.get_adj_close(end=start_date))
+        self.hedge_ratio = generate_hedge_ratio(self._get_prices('close'))
         self.portfolio_prices = []
         self.long = False
         self.short = False
+
+    def _get_prices(self, price_type):
+        price_type_dict = {'open': 2, 'low': 3, 'high': 4, 'close': 5}
+        price_type = price_type_dict[price_type]
+        prices = []
+        for s in self.symbol_list:
+            prices.append(self.bars.get_latest_bars(s, N=0)[:][price_type])
+        return prices
 
     def _current_portfolio_price(self, price_type):
         price_type_dict = {'open': 2, 'low': 3, 'high': 4, 'close': 5}

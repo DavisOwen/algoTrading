@@ -10,7 +10,6 @@ from abc import ABCMeta, abstractmethod
 from event import MarketEvent
 
 logger = logging.getLogger("backtester")
-logger.setLevel(logging.DEBUG)
 quandl.ApiConfig.api_key = 'AfS6bPzj1CsRFyYxCcvz'
 
 
@@ -142,7 +141,7 @@ class HistoricCSVDataHandler(DataHandler):
         """
         for s in self.symbol_list:
             try:
-                bar = self._get_new_bars(s).next()
+                bar = next(self._get_new_bars(s))
             except StopIteration:
                 self.continue_backtest = False
             else:
@@ -159,10 +158,10 @@ class QuandlDataHandler(DataHandler):
 
     Data format for quandl is:
     index - (pd.Timestamp) date
-    data - (float) Open, High, Low, Close, Volume, Ex-Dividend, Split-Ratio,
+    data - (float) Open, High, Low, Close, Volume, Ex-Dividend, Split Ratio,
     Adj. Open, Adj. High, Adj. Low, Adj. Close, Adj. Volume
     """
-    def __init__(self, events, pickle_dir, symbol_list):
+    def __init__(self, events, pickle_dir, symbol_list, train_date, test_date):
         """
         Initialises the quandl data handler.
 
@@ -174,10 +173,14 @@ class QuandlDataHandler(DataHandler):
         self.events = events
         self.pickle_dir = pickle_dir
         self.symbol_list = symbol_list
+        self.train_date = train_date
+        self.test_date = test_date
 
         self.symbol_data = {}
         self.latest_symbol_data = {}
         self.continue_backtest = True
+
+        self.get_new_bars = self._get_new_bars_dict()
 
         self._get_data_from_pickle()
 
@@ -191,37 +194,44 @@ class QuandlDataHandler(DataHandler):
             try:
                 self.symbol_data[sec] = pickle.load(open(os.path.join(
                                             self.pickle_dir,
-                                            "{sec}.pickle".format(sec))))
+                                            "{sec}.pickle".format(sec=sec)),
+                                                         'rb'))
             except FileNotFoundError:
                 logger.info("File not found! Running download_quandl_ticker()")
                 self.symbol_data[sec] = self._download_quandl_ticker(sec)
+            self.symbol_data[sec] = self.symbol_data[sec][self.train_date:]
             self.latest_symbol_data[sec] = []
 
-    def _downlaod_quandl_ticker(self, sec):
+    def _download_quandl_ticker(self, sec):
         """
         Downloads security from quandl and saves to pickle_dir
 
         Parameters:
         sec - security ticker
         """
-        logger.info("Downloading {sec}".format(sec))
-        data = quandl.get("WIKI/{sec}".format(sec))
+        logger.info("Downloading {sec}".format(sec=sec))
+        data = quandl.get("WIKI/{sec}".format(sec=sec))
         pickle.dump(data, open(os.path.join(
-            self.pickle_dir, "{sec}.pickle".format(sec))))
+            self.pickle_dir, "{sec}.pickle".format(sec=sec)), 'wb'))
         return data
 
-    def _get_new_bar(self, symbol):
+    def _get_new_bars_dict(self):
+        get_new_bars = {}
+        for s in self.symbol_list:
+            get_new_bars[s] = self._get_new_bars(s)
+        return get_new_bars
+
+    def _get_new_bars(self, symbol):
         """
         Returns the latest bar from the data feed as a tuple of
         (symbol, datetime, open, low, high, close, volume, dividend events and
         split events).
         """
         for index, row in self.symbol_data[symbol].iterrows():
-            yield tuple([symbol,
-                         index,
-                         row['Open'], row['Low'],
-                         row['High'], row['Close'], row['Volume'],
-                         row['Ex-Dividend'], row['Split-Ratio']])
+            yield [symbol, index, row['Open'], row['Low'],
+                   row['High'], row['Close'],
+                   row['Volume'], row['Ex-Dividend'],
+                   row['Split Ratio']]
 
     def get_latest_bars(self, symbol, N=1):
         """
@@ -251,16 +261,33 @@ class QuandlDataHandler(DataHandler):
         close = bar[5]
         ex_div = bar[7]
         split = bar[8]
-        logger.info("Adjusting data for {symbol} on {date}. Close: {close},\
-                    Ex-Div: {ex_div}, Split-Ratio: {split}"
-                    .format(symbol, date, close, ex_div, split))
         adj_ratio = split
-        adj_ratio += (close + ex_div) / close
+        adj_ratio *= (close + ex_div) / close
         if adj_ratio != 1.0:
+            logger.info("Adjusting data for {symbol} on {date}. "
+                        "Close: {close}, Ex-Div: {ex_div}, "
+                        "Split-Ratio: {split}"
+                        .format(symbol=symbol, date=date, close=close,
+                                ex_div=ex_div, split=split))
             for s in self.symbol_list:
                 for i, bar in enumerate(self.latest_symbol_data[s]):
                     for j in range(2, 6):
                         self.latest_symbol_data[s][i][j] /= adj_ratio
+
+    def generate_train_set(self):
+        stop = False
+        logger.info("Generating training set. Starting at "
+                    "{start_date} and ending at {end_date}"
+                    .format(start_date=self.train_date,
+                            end_date=self.test_date))
+        while not stop:
+            for s in self.symbol_list:
+                bar = next(self.get_new_bars[s])
+                logger.info("Getting bar for {date}".format(date=bar[1]))
+                if bar[1] >= self.test_date:
+                    stop = True
+                self._adjust_data(bar)
+                self.latest_symbol_data[s].append(bar)
 
     def update_bars(self):
         """
@@ -269,11 +296,13 @@ class QuandlDataHandler(DataHandler):
         """
         for s in self.symbol_list:
             try:
-                bar = self._get_new_bars(s).next()
+                bar = next(self._get_new_bars(s))
             except StopIteration:
                 self.continue_backtest = False
             else:
                 if bar is not None:
+                    logger.info("Generating bar for {date}"
+                                .format(date=bar[1]))
                     self._adjust_data(bar)
                     self.latest_symbol_data[s].append(bar)
         self.events.put(MarketEvent())

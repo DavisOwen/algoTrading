@@ -1,5 +1,6 @@
 *.pickle
 __pycache__
 *.pyc
+*.csv
 tags
 algotrading

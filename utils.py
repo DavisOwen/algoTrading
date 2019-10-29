@@ -1,34 +1,34 @@
 import urllib3
-from bs4 import BeautifulSoup
+# from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.tsa.vector_ar.vecm as jh
 import pickle
 
 
-def scrape_list():
+# def scrape_list():
 
-    print('Scraping tickers')
-    site = 'http://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-    http = urllib3.PoolManager()
-    response = http.request('GET', site)
-    soup = BeautifulSoup(response.data, 'html.parser')
+#     print('Scraping tickers')
+#     site = 'http://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+#     http = urllib3.PoolManager()
+#     response = http.request('GET', site)
+#     soup = BeautifulSoup(response.data, 'html.parser')
 
-    table = soup.find('table', {'class': 'wikitable sortable'})
-    sector_tickers = dict()
-    for row in table.findAll('tr')[1:]:
-        col = row.findAll('td')
-        if len(col) > 0:
-            sector = str(col[3].string.strip()).lower().replace(' ', '_')
-            ticker = str(col[1].string.strip())
-            for i in range(len(ticker)):
-                if ticker[i] == '.':
-                    new = ticker[:i]+'_'+ticker[(i+1):]
-                    ticker = new
-            if sector not in sector_tickers:
-                sector_tickers[sector] = list()
-            sector_tickers[sector].append(ticker)
-    return sector_tickers
+#     table = soup.find('table', {'class': 'wikitable sortable'})
+#     sector_tickers = dict()
+#     for row in table.findAll('tr')[1:]:
+#         col = row.findAll('td')
+#         if len(col) > 0:
+#             sector = str(col[3].string.strip()).lower().replace(' ', '_')
+#             ticker = str(col[1].string.strip())
+#             for i in range(len(ticker)):
+#                 if ticker[i] == '.':
+#                     new = ticker[:i]+'_'+ticker[(i+1):]
+#                     ticker = new
+#             if sector not in sector_tickers:
+#                 sector_tickers[sector] = list()
+#             sector_tickers[sector].append(ticker)
+#     return sector_tickers
 
 
 def listify(x):
@@ -80,14 +80,14 @@ def get_oldest():
     return adj_close.iloc[0].dropna().index.format()
 
 
-def generate_hedge_ratio(df):
+def generate_hedge_ratio_from_df(df):
     """
     Uses matrix generated from df
     to calcuate hedge ratio with coint_johansen
     statistical test
 
     Parameters:
-    :para df: pd.DataFrame to generate hedge_ratio for
+    :param df: pd.DataFrame to generate hedge_ratio for
     :type df: pd.DataFrame
 
     :return: hedge ratio
@@ -98,6 +98,11 @@ def generate_hedge_ratio(df):
     for i, sec in enumerate(df):
         matrix[:, i] = df[sec]
     results = jh.coint_johansen(matrix, 0, 1)
+    return results.evec[:, 0]
+
+
+def generate_hedge_ratio(prices):
+    results = jh.coint_johansen(prices, 0, 1)
     return results.evec[:, 0]
 
 
