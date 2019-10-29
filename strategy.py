@@ -135,7 +135,7 @@ class BollingerBandJohansenStrategy(Strategy):
         :type event: Event
         """
         if event.type == "MARKET":
-            price = self._current_portfolio_price()
+            price = self._current_portfolio_price('close')
             self.portfolio_prices.append(price)
             rolling_avg = mean(self.portfolio_prices)
             rolling_std = stdev(self.portfolio_prices)
