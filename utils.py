@@ -1,4 +1,4 @@
-import urllib3
+# import urllib3
 # from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
 import numpy as np
@@ -102,6 +102,9 @@ def generate_hedge_ratio_from_df(df):
 
 
 def generate_hedge_ratio(prices):
+    prices = np.array(prices)
+    # np.set_printoptions(threshold=np.inf)
+    print(prices)
     results = jh.coint_johansen(prices, 0, 1)
     return results.evec[:, 0]
 

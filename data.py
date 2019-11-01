@@ -150,7 +150,7 @@ class HistoricCSVDataHandler(DataHandler):
         self.events.put(MarketEvent())
 
 
-class QuandlDataHandler(DataHandler):
+class QuandlAPIDataHandler(DataHandler):
     """
     DataHandler class that pulls data from quandl using supplied tickers.
     If data exists in pickle files, will load from pickle, if they do
@@ -161,7 +161,7 @@ class QuandlDataHandler(DataHandler):
     data - (float) Open, High, Low, Close, Volume, Ex-Dividend, Split Ratio,
     Adj. Open, Adj. High, Adj. Low, Adj. Close, Adj. Volume
     """
-    def __init__(self, events, pickle_dir, symbol_list, train_date, test_date):
+    def __init__(self, events, pickle_dir, symbol_list, test_date):
         """
         Initialises the quandl data handler.
 
@@ -173,7 +173,6 @@ class QuandlDataHandler(DataHandler):
         self.events = events
         self.pickle_dir = pickle_dir
         self.symbol_list = symbol_list
-        self.train_date = train_date
         self.test_date = test_date
 
         self.symbol_data = {}
@@ -183,6 +182,10 @@ class QuandlDataHandler(DataHandler):
         self.get_new_bars = self._get_new_bars_dict()
 
         self._get_data_from_pickle()
+
+        self.train_date = self._get_train_date()
+
+        self._adjust_start_date()
 
     def _get_data_from_pickle(self):
         """
@@ -199,8 +202,11 @@ class QuandlDataHandler(DataHandler):
             except FileNotFoundError:
                 logger.info("File not found! Running download_quandl_ticker()")
                 self.symbol_data[sec] = self._download_quandl_ticker(sec)
-            self.symbol_data[sec] = self.symbol_data[sec][self.train_date:]
             self.latest_symbol_data[sec] = []
+
+    def _adjust_start_date(self):
+        for s in self.symbol_list:
+            self.symbol_data[s] = self.symbol_data[s][self.train_date:]
 
     def _download_quandl_ticker(self, sec):
         """
@@ -227,7 +233,7 @@ class QuandlDataHandler(DataHandler):
         (symbol, datetime, open, low, high, close, volume, dividend events and
         split events).
         """
-        for index, row in self.symbol_data[symbol].iterrows():
+        for index, row in self.symbol_data[symbol][self.test_date:].iterrows():
             yield [symbol, index, row['Open'], row['Low'],
                    row['High'], row['Close'],
                    row['Volume'], row['Ex-Dividend'],
@@ -246,7 +252,7 @@ class QuandlDataHandler(DataHandler):
         else:
             return bars_list[-N:]
 
-    def _adjust_data(self, bar):
+    def _adjust_data_test(self, bar):
         """
         Checks if there is a dividend for split event
         on the given bar, and if there is, will adjust
@@ -274,20 +280,41 @@ class QuandlDataHandler(DataHandler):
                     for j in range(2, 6):
                         self.latest_symbol_data[s][i][j] /= adj_ratio
 
-    def generate_train_set(self):
-        stop = False
-        logger.info("Generating training set. Starting at "
-                    "{start_date} and ending at {end_date}"
-                    .format(start_date=self.train_date,
+    def _adjust_data_train(self, bars):
+        """
+        TODO figure this shit out
+        """
+        adj_ratio = bars['Split Ratio'].sum()
+        adj_ratio *= (bars['Close'] + bars['Ex-Dividend'] /
+                      bars['Close']).sum()
+        bars['Open'] *= adj_ratio
+        bars['High'] *= adj_ratio
+        bars['Low'] *= adj_ratio
+        bars['Close'] *= adj_ratio
+        return bars
+
+    def _get_train_date(self):
+        latest = datetime.datetime.min
+        for s in self.symbol_list:
+            date = self.symbol_data[s].index[0]
+            if date > latest:
+                latest = date
+        return latest
+
+    def generate_train_set(self, price_type):
+        logger.info("Generating training set for {price_type} data. "
+                    "Starting at {start_date} and ending at {end_date}"
+                    .format(price_type=price_type,
+                            start_date=self.train_date,
                             end_date=self.test_date))
-        while not stop:
-            for s in self.symbol_list:
-                bar = next(self.get_new_bars[s])
-                logger.info("Getting bar for {date}".format(date=bar[1]))
-                if bar[1] >= self.test_date:
-                    stop = True
-                self._adjust_data(bar)
-                self.latest_symbol_data[s].append(bar)
+        train_set = []
+        for s in self.symbol_list:
+            bars = self.symbol_data[s].iloc[:self.symbol_data[s].index
+                                            .get_loc(self.test_date,
+                                                     method='backfill')]
+            adjusted_bars = self._adjust_data_train(bars)
+            train_set.append(adjusted_bars[price_type])
+        return train_set
 
     def update_bars(self):
         """
@@ -303,7 +330,7 @@ class QuandlDataHandler(DataHandler):
                 if bar is not None:
                     logger.info("Generating bar for {date}"
                                 .format(date=bar[1]))
-                    self._adjust_data(bar)
+                    self._adjust_data_test(bar)
                     self.latest_symbol_data[s].append(bar)
         self.events.put(MarketEvent())
 

@@ -113,7 +113,8 @@ class BollingerBandJohansenStrategy(Strategy):
         price_type = price_type_dict[price_type]
         prices = []
         for s in self.symbol_list:
-            prices.append(self.bars.get_latest_bars(s, N=0)[:][price_type])
+            prices.append([x[price_type] for x in
+                           self.bars.get_latest_bars(s, N=0)])
         return prices
 
     def _current_portfolio_price(self, price_type):
