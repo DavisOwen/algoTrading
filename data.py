@@ -283,14 +283,19 @@ class QuandlAPIDataHandler(DataHandler):
     def _adjust_data_train(self, bars):
         """
         TODO figure this shit out
+        I figured it out
         """
-        adj_ratio = bars['Split Ratio'].sum()
-        adj_ratio *= (bars['Close'] + bars['Ex-Dividend'] /
-                      bars['Close']).sum()
-        bars['Open'] *= adj_ratio
-        bars['High'] *= adj_ratio
-        bars['Low'] *= adj_ratio
-        bars['Close'] *= adj_ratio
+        start = None
+        for index in bars[(bars['Split Ratio'] != 1.0)
+                          | (bars['Ex-Dividend'] != 0.0)].index:
+            adj_ratio = bars['Split Ratio'][index]
+            adj_ratio *= (bars['Close'][index] + bars['Ex-Dividend'][index])\
+                / bars['Close'][index]
+            bars.loc[start:index, 'Open'].iloc[:-1] /= adj_ratio
+            bars.loc[start:index, 'High'].iloc[:-1] /= adj_ratio
+            bars.loc[start:index, 'Low'].iloc[:-1] /= adj_ratio
+            bars.loc[start:index, 'Close'].iloc[:-1] /= adj_ratio
+            start = index
         return bars
 
     def _get_train_date(self):

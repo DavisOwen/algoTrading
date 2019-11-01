@@ -103,19 +103,11 @@ class BollingerBandJohansenStrategy(Strategy):
         self.enter = enter
         self.exit = exit
 
-        self.hedge_ratio = generate_hedge_ratio(self._get_prices('close'))
+        self.hedge_ratio = generate_hedge_ratio(
+            self.bars.generate_train_set('Close'))
         self.portfolio_prices = []
         self.long = False
         self.short = False
-
-    def _get_prices(self, price_type):
-        price_type_dict = {'open': 2, 'low': 3, 'high': 4, 'close': 5}
-        price_type = price_type_dict[price_type]
-        prices = []
-        for s in self.symbol_list:
-            prices.append([x[price_type] for x in
-                           self.bars.get_latest_bars(s, N=0)])
-        return prices
 
     def _current_portfolio_price(self, price_type):
         price_type_dict = {'open': 2, 'low': 3, 'high': 4, 'close': 5}
