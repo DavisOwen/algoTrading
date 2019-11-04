@@ -1,9 +1,11 @@
 import datetime
+import operator
 import os
 import pickle
 import logging
 import quandl
 import pandas as pd
+from utils import scrape_list, listify
 
 from abc import ABCMeta, abstractmethod
 
@@ -182,9 +184,6 @@ class QuandlAPIDataHandler(DataHandler):
         self.get_new_bars = self._get_new_bars_dict()
 
         self._get_data_from_pickle()
-
-        self.train_date = self._get_train_date()
-
         self._adjust_start_date()
 
     def _get_data_from_pickle(self):
@@ -204,7 +203,25 @@ class QuandlAPIDataHandler(DataHandler):
                 self.symbol_data[sec] = self._download_quandl_ticker(sec)
             self.latest_symbol_data[sec] = []
 
+    def sort_oldest(self):
+        tickers = scrape_list()
+        tickers = listify(tickers)
+        date_dict = {}
+        for ticker in tickers:
+            try:
+                sec = pickle.load(open(os.path.join(
+                                self.pickle_dir,
+                                "{sec}.pickle".format(sec=ticker)),
+                                   'rb'))
+            except FileNotFoundError:
+                pass
+            else:
+                date_dict[ticker] = sec.index[0]
+        return [x[0] for x in sorted(date_dict.items(),
+                                     key=operator.itemgetter(1))]
+
     def _adjust_start_date(self):
+        self.train_date = self._get_train_date()
         for s in self.symbol_list:
             self.symbol_data[s] = self.symbol_data[s][self.train_date:]
 
@@ -338,6 +355,12 @@ class QuandlAPIDataHandler(DataHandler):
                     self._adjust_data_test(bar)
                     self.latest_symbol_data[s].append(bar)
         self.events.put(MarketEvent())
+
+    def change_symbol_list(self, symbols):
+        self.symbol_list = symbols
+        self.symbol_data = {}
+        self._get_data_from_pickle()
+        self._adjust_start_date()
 
     def get_adj_close(self, start=None, end=None):
         """

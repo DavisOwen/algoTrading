@@ -1,44 +1,42 @@
-# import urllib3
-# from bs4 import BeautifulSoup
+import requests
+from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.tsa.vector_ar.vecm as jh
-import pickle
+import statsmodels.tsa.stattools as ts
 
 
-# def scrape_list():
+def scrape_list():
 
-#     print('Scraping tickers')
-#     site = 'http://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-#     http = urllib3.PoolManager()
-#     response = http.request('GET', site)
-#     soup = BeautifulSoup(response.data, 'html.parser')
+    site = 'http://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+    response = requests.get(site)
+    soup = BeautifulSoup(response.content, 'html.parser')
 
-#     table = soup.find('table', {'class': 'wikitable sortable'})
-#     sector_tickers = dict()
-#     for row in table.findAll('tr')[1:]:
-#         col = row.findAll('td')
-#         if len(col) > 0:
-#             sector = str(col[3].string.strip()).lower().replace(' ', '_')
-#             ticker = str(col[1].string.strip())
-#             for i in range(len(ticker)):
-#                 if ticker[i] == '.':
-#                     new = ticker[:i]+'_'+ticker[(i+1):]
-#                     ticker = new
-#             if sector not in sector_tickers:
-#                 sector_tickers[sector] = list()
-#             sector_tickers[sector].append(ticker)
-#     return sector_tickers
+    table = soup.find('table', {'class': 'wikitable sortable'})
+    sector_tickers = dict()
+    for row in table.findAll('tr')[1:]:
+        col = row.findAll('td')
+        if len(col) > 0:
+            sector = str(col[3].string.strip()).lower().replace(' ', '_')
+            ticker = str(col[0].a.string.strip())
+            for i in range(len(ticker)):
+                if ticker[i] == '.':
+                    new = ticker[:i]+'_'+ticker[(i+1):]
+                    ticker = new
+            if sector not in sector_tickers:
+                sector_tickers[sector] = list()
+            sector_tickers[sector].append(ticker)
+    return sector_tickers
 
 
-def listify(x):
+def listify(dic):
     """ Turns dictionary of lists into one long list """
 
-    y = list()
-    for lis in x.values():
+    arr = []
+    for lis in dic.values():
         for val in lis:
-            y.append(val)
-    return y
+            arr.append(val)
+    return arr
 
 
 def plot_results(results):
@@ -68,18 +66,6 @@ def plot_results(results):
     plt.show()
 
 
-def get_oldest():
-    """
-
-    Gets the oldest stocks on the S&P500
-
-    """
-
-    adj_close, volume, split, div, close = pickle.load(
-        open('WIKIdata.pickle', 'rb'))
-    return adj_close.iloc[0].dropna().index.format()
-
-
 def generate_hedge_ratio_from_df(df):
     """
     Uses matrix generated from df
@@ -103,10 +89,16 @@ def generate_hedge_ratio_from_df(df):
 
 def generate_hedge_ratio(prices):
     prices = np.array(prices)
-    # np.set_printoptions(threshold=np.inf)
-    print(prices)
+    prices = prices.T
     results = jh.coint_johansen(prices, 0, 1)
-    return results.evec[:, 0]
+    # return results.evec[:, 0]
+    return results
+
+
+def is_stationary(prices, hedge_ratio):
+    time_series = dot(prices, hedge_ratio)
+    cadf = ts.adfuller(time_series)
+    return cadf[0] <= cadf[4]['1%']
 
 
 def dot(arr1, arr2):

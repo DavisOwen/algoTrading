@@ -1,9 +1,15 @@
-from utils import generate_hedge_ratio, dot
+from utils import generate_hedge_ratio, dot, is_stationary
+import numpy as np
+import sys
+import logging
 from statistics import mean, stdev
+from itertools import combinations
 
 from abc import ABCMeta, abstractmethod
 
 from event import SignalEvent
+
+logger = logging.getLogger("backtester")
 
 
 class Strategy(object):
@@ -103,11 +109,37 @@ class BollingerBandJohansenStrategy(Strategy):
         self.enter = enter
         self.exit = exit
 
-        self.hedge_ratio = generate_hedge_ratio(
-            self.bars.generate_train_set('Close'))
+        # self.hedge_ratio = generate_hedge_ratio(
+        #     self.bars.generate_train_set('Close'))
+        self.hedge_ratio = self._find_stationary_portfolio()
         self.portfolio_prices = []
         self.long = False
         self.short = False
+
+    def _find_stationary_portfolio(self):
+        """
+        TODO: scrape all s&p tickers and
+        create DataHandler object to generate
+        hedge ratio for. If hedge ratio is stationary,
+        return the DataHandler object.
+        """
+        tickers = self.bars.sort_oldest()
+        for port in combinations(tickers, 12):
+            self.bars.change_symbol_list(port)
+            prices = self.bars.generate_train_set('Close')
+            try:
+                results = generate_hedge_ratio(prices)
+            except np.linalg.LinAlgError as error:
+                logger.info("Error: {error}".format(error=error))
+            else:
+                hedge_ratio = results.evec[:, 0]
+                if results.lr1[0] >= results.cvt[0][-1] and\
+                    results.lr2[0] >= results.cvm[0][-1] and\
+                        is_stationary(prices, hedge_ratio):
+                    return hedge_ratio
+            logger.info("{port} not stationary".format(port=port))
+        logger.error("No stationary portfolios found!")
+        sys.exit(0)
 
     def _current_portfolio_price(self, price_type):
         price_type_dict = {'open': 2, 'low': 3, 'high': 4, 'close': 5}
