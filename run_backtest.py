@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from queue import Queue
+from queue import Queue, Empty
 import os
 import datetime
 import logging
@@ -25,7 +25,7 @@ pickle_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
 # symbol_list = ['AYI', 'APA', 'AMZN', 'LNT', 'CTL',
 #                'ALB', 'ABBV', 'AMT', 'ADM', 'AON', 'ORCL']
 symbol_list = []
-start_date = datetime.datetime(2014, 1, 2)
+start_date = datetime.datetime(2000, 1, 2)
 enter = 0.5
 exit = 0
 
@@ -36,7 +36,7 @@ strategy = BollingerBandJohansenStrategy(bars, events, enter, exit)
 port = NaivePortfolio(bars, events, start_date)
 broker = SimulatedExecutionHandler(events)
 
-logger.info("Starting Backtest on {date}".format(start_date))
+logger.info("Starting Backtest on {date}".format(date=start_date))
 
 # Main Loop
 while True:
@@ -49,8 +49,8 @@ while True:
     # Handle the events
     while True:
         try:
-            event = events.get(False)
-        except Queue.Empty:
+            event = events.get(block=False)
+        except Empty:
             break
         else:
             if event is not None:

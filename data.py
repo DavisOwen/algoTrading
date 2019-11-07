@@ -174,17 +174,12 @@ class QuandlAPIDataHandler(DataHandler):
         """
         self.events = events
         self.pickle_dir = pickle_dir
-        self.symbol_list = symbol_list
         self.test_date = test_date
 
-        self.symbol_data = {}
         self.latest_symbol_data = {}
         self.continue_backtest = True
 
-        self.get_new_bars = self._get_new_bars_dict()
-
-        self._get_data_from_pickle()
-        self._adjust_start_date()
+        self.update_symbol_list(symbol_list)
 
     def _get_data_from_pickle(self):
         """
@@ -345,22 +340,21 @@ class QuandlAPIDataHandler(DataHandler):
         """
         for s in self.symbol_list:
             try:
-                bar = next(self._get_new_bars(s))
+                bar = next(self.get_new_bars[s])
             except StopIteration:
                 self.continue_backtest = False
             else:
                 if bar is not None:
-                    logger.info("Generating bar for {date}"
-                                .format(date=bar[1]))
                     self._adjust_data_test(bar)
                     self.latest_symbol_data[s].append(bar)
         self.events.put(MarketEvent())
 
-    def change_symbol_list(self, symbols):
+    def update_symbol_list(self, symbols):
         self.symbol_list = symbols
         self.symbol_data = {}
         self._get_data_from_pickle()
         self._adjust_start_date()
+        self.get_new_bars = self._get_new_bars_dict()
 
     def get_adj_close(self, start=None, end=None):
         """

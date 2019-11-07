@@ -16,7 +16,7 @@ class MarketEvent(Event):
         """
         Initialises the MarketEvent.
         """
-        self.type = 'Market'
+        self.type = 'MARKET'
 
 
 class SignalEvent(Event):

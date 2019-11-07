@@ -95,8 +95,7 @@ def generate_hedge_ratio(prices):
     return results
 
 
-def is_stationary(prices, hedge_ratio):
-    time_series = dot(prices, hedge_ratio)
+def is_stationary(time_series):
     cadf = ts.adfuller(time_series)
     return cadf[0] <= cadf[4]['1%']
 

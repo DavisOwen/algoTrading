@@ -112,7 +112,6 @@ class BollingerBandJohansenStrategy(Strategy):
         # self.hedge_ratio = generate_hedge_ratio(
         #     self.bars.generate_train_set('Close'))
         self.hedge_ratio = self._find_stationary_portfolio()
-        self.portfolio_prices = []
         self.long = False
         self.short = False
 
@@ -125,7 +124,7 @@ class BollingerBandJohansenStrategy(Strategy):
         """
         tickers = self.bars.sort_oldest()
         for port in combinations(tickers, 12):
-            self.bars.change_symbol_list(port)
+            self.bars.update_symbol_list(port)
             prices = self.bars.generate_train_set('Close')
             try:
                 results = generate_hedge_ratio(prices)
@@ -133,9 +132,13 @@ class BollingerBandJohansenStrategy(Strategy):
                 logger.info("Error: {error}".format(error=error))
             else:
                 hedge_ratio = results.evec[:, 0]
+                self.portfolio_prices = dot(prices, hedge_ratio)
                 if results.lr1[0] >= results.cvt[0][-1] and\
                     results.lr2[0] >= results.cvm[0][-1] and\
-                        is_stationary(prices, hedge_ratio):
+                        is_stationary(self.portfolio_prices):
+                    logger.info("Stationary portfolio found. Tickers: {port}"
+                                .format(port=port))
+                    self.portfolio_prices = self.portfolio_prices.tolist()
                     return hedge_ratio
             logger.info("{port} not stationary".format(port=port))
         logger.error("No stationary portfolios found!")
@@ -145,8 +148,13 @@ class BollingerBandJohansenStrategy(Strategy):
         price_type_dict = {'open': 2, 'low': 3, 'high': 4, 'close': 5}
         price_type = price_type_dict[price_type]
         prices = []
-        for s in self.symbol_list:
-            prices.append(self.bars.get_latest_bars(s, N=1)[0][price_type])
+        for i, s in enumerate(self.symbol_list):
+            bar = self.bars.get_latest_bars(s, N=1)[0]
+            adj_ratio = bar['Split Ratio']
+            adj_ratio *= (bar['Close'] + bar['Ex-Dividend'])\
+                / bar['Close']
+            self.hedge_ratio[i] *= adj_ratio
+            prices.append(bar[price_type])
         return dot(prices, self.hedge_ratio)
 
     def _order_portfolio(self, direction):
@@ -154,6 +162,10 @@ class BollingerBandJohansenStrategy(Strategy):
             bar = self.bars.get_latest_bars(s, N=1)
             signal = SignalEvent(bar[0][0], bar[0][1], direction,
                                  self.hedge_ratio[i])
+            logger.info("Signal Event created for {sym} on {date} to "
+                        "{direction} with strength {strength}".format(
+                            sym=bar[0][0], date=bar[0][1],
+                            direction=direction, strength=self.hedge_ratio[i]))
             self.events.put(signal)
 
     def calculate_signals(self, event):
@@ -168,19 +180,23 @@ class BollingerBandJohansenStrategy(Strategy):
         if event.type == "MARKET":
             price = self._current_portfolio_price('close')
             self.portfolio_prices.append(price)
-            rolling_avg = mean(self.portfolio_prices)
-            rolling_std = stdev(self.portfolio_prices)
-            zscore = (price - rolling_avg) / rolling_std
+            if is_stationary(self.portfolio_prices):
+                rolling_avg = mean(self.portfolio_prices)
+                rolling_std = stdev(self.portfolio_prices)
+                zscore = (price - rolling_avg) / rolling_std
 
-            if self.long and zscore >= self.exit:
+                if self.long and zscore >= self.exit:
+                    self._order_portfolio(direction='EXIT')
+                    self.long = False
+                elif self.short and zscore <= -self.exit:
+                    self._order_portfolio(direction='EXIT')
+                    self.short = False
+                elif not self.short and zscore >= self.enter:
+                    self._order_portfolio(direction='SHORT')
+                    self.short = True
+                elif not self.long and zscore <= -self.enter:
+                    self._order_portfolio(direction='LONG')
+                    self.long = True
+            else:
                 self._order_portfolio(direction='EXIT')
-                self.long = False
-            elif self.short and zscore <= -self.exit:
-                self._order_portfolio(direction='EXIT')
-                self.short = False
-            elif not self.short and zscore >= self.enter:
-                self._order_portfolio(direction='SHORT')
-                self.short = True
-            elif not self.long and zscore <= -self.enter:
-                self._order_portfolio(direction='LONG')
-                self.long = True
+                self.hedge_ratio = self._find_stationary_portfolio()
