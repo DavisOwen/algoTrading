@@ -46,7 +46,7 @@ class SimulatedExecutionHandler(ExecutionHandler):
     before implementation with a more sophisticated execution
     handler.
     """
-    def __init__(self, events):
+    def __init__(self, events, bars):
         """
         Initialises the handler, setting the event queues
         up internally.
@@ -55,6 +55,7 @@ class SimulatedExecutionHandler(ExecutionHandler):
         events - The Queue of Events objects.
         """
         self.events = events
+        self.bars = bars
 
     def execute_order(self, event):
         """
@@ -65,9 +66,10 @@ class SimulatedExecutionHandler(ExecutionHandler):
         event - Contains an Event object with order information.
         """
         if event.type == 'ORDER':
+            fill_cost = self.bars.get_latest_bars(event.symbol)[0]['Close']
             fill_event = FillEvent(datetime.datetime.utcnow(), event.symbol,
                                    'ARCA', event.quantity,
-                                   event.direction, None)
+                                   event.direction, fill_cost)
             self.events.put(fill_event)
 
 

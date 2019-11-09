@@ -81,11 +81,12 @@ class BuyAndHoldStrategy(Strategy):
         """
         if event.type == 'MARKET':
             for s in self.symbol_list:
-                bars = self.bars.get_latest_bars(s, N=1)
-                if bars is not None and bars != []:
+                bar = self.bars.get_latest_bars(s, N=1)[0]
+                if bar is not None and bar != {}:
                     if not self.bought[s]:
                         # (Symbol, Datetime, Type = LONG, SHORT or EXIT)
-                        signal = SignalEvent(bars[0][0], bars[0][1], 'LONG')
+                        signal = SignalEvent(bar['Symbol'], bar['Date'],
+                                             'LONG')
                         self.events.put(signal)
                         self.bought[s] = True
 
@@ -95,7 +96,7 @@ class BollingerBandJohansenStrategy(Strategy):
     Uses a Johansen test to create a mean reverting portfolio,
     and uses bollinger bands strategy using resuling hedge ratios.
     """
-    def __init__(self, bars, events, enter, exit):
+    def __init__(self, bars, events, enter, exit, start_date):
         """
         Initialises the bollinger band johansen strategy.
 
@@ -104,10 +105,10 @@ class BollingerBandJohansenStrategy(Strategy):
         events - The Event Queue object.
         """
         self.bars = bars
-        self.symbol_list = self.bars.symbol_list
         self.events = events
         self.enter = enter
         self.exit = exit
+        self.current_date = start_date
 
         # self.hedge_ratio = generate_hedge_ratio(
         #     self.bars.generate_train_set('Close'))
@@ -124,7 +125,7 @@ class BollingerBandJohansenStrategy(Strategy):
         """
         tickers = self.bars.sort_oldest()
         for port in combinations(tickers, 12):
-            self.bars.update_symbol_list(port)
+            self.bars.update_symbol_list(port, self.current_date)
             prices = self.bars.generate_train_set('Close')
             try:
                 results = generate_hedge_ratio(prices)
@@ -145,26 +146,25 @@ class BollingerBandJohansenStrategy(Strategy):
         sys.exit(0)
 
     def _current_portfolio_price(self, price_type):
-        price_type_dict = {'open': 2, 'low': 3, 'high': 4, 'close': 5}
-        price_type = price_type_dict[price_type]
         prices = []
-        for i, s in enumerate(self.symbol_list):
+        for i, s in enumerate(self.bars.symbol_list):
             bar = self.bars.get_latest_bars(s, N=1)[0]
-            adj_ratio = bar['Split Ratio']
-            adj_ratio *= (bar['Close'] + bar['Ex-Dividend'])\
+            self.current_date = bar['Date']
+            adj_ratio = bar['Split']
+            adj_ratio *= (bar['Close'] + bar['Dividend'])\
                 / bar['Close']
             self.hedge_ratio[i] *= adj_ratio
             prices.append(bar[price_type])
         return dot(prices, self.hedge_ratio)
 
     def _order_portfolio(self, direction):
-        for i, s in enumerate(self.symbol_list):
-            bar = self.bars.get_latest_bars(s, N=1)
-            signal = SignalEvent(bar[0][0], bar[0][1], direction,
+        for i, s in enumerate(self.bars.symbol_list):
+            bar = self.bars.get_latest_bars(s, N=1)[0]
+            signal = SignalEvent(bar['Symbol'], bar['Date'], direction,
                                  self.hedge_ratio[i])
             logger.info("Signal Event created for {sym} on {date} to "
                         "{direction} with strength {strength}".format(
-                            sym=bar[0][0], date=bar[0][1],
+                            sym=bar['Symbol'], date=bar['Date'],
                             direction=direction, strength=self.hedge_ratio[i]))
             self.events.put(signal)
 
@@ -178,12 +178,13 @@ class BollingerBandJohansenStrategy(Strategy):
         :type event: Event
         """
         if event.type == "MARKET":
-            price = self._current_portfolio_price('close')
+            price = self._current_portfolio_price('Close')
             self.portfolio_prices.append(price)
             if is_stationary(self.portfolio_prices):
                 rolling_avg = mean(self.portfolio_prices)
                 rolling_std = stdev(self.portfolio_prices)
                 zscore = (price - rolling_avg) / rolling_std
+                logger.debug(zscore)
 
                 if self.long and zscore >= self.exit:
                     self._order_portfolio(direction='EXIT')

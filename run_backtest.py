@@ -32,9 +32,9 @@ exit = 0
 # Objects
 bars = QuandlAPIDataHandler(events, pickle_dir, symbol_list,
                             start_date)
-strategy = BollingerBandJohansenStrategy(bars, events, enter, exit)
+strategy = BollingerBandJohansenStrategy(bars, events, enter, exit, start_date)
 port = NaivePortfolio(bars, events, start_date)
-broker = SimulatedExecutionHandler(events)
+broker = SimulatedExecutionHandler(events, bars)
 
 logger.info("Starting Backtest on {date}".format(date=start_date))
 

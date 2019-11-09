@@ -108,11 +108,11 @@ class NaivePortfolio(Portfolio):
         """
         bars = {}
         for sym in self.symbol_list:
-            bars[sym] = self.bars.get_latest_bars(sym, N=1)
+            bars[sym] = self.bars.get_latest_bars(sym, N=1)[0]
 
         # Update positions
         dp = dict((k, v) for k, v in [(s, 0) for s in self.symbol_list])
-        dp['datetime'] = bars[self.symbol_list[0]][0][1]
+        dp['datetime'] = bars[self.symbol_list[0]]['Date']
 
         for s in self.symbol_list:
             dp[s] = self.current_positions[s]
@@ -122,14 +122,14 @@ class NaivePortfolio(Portfolio):
 
         # Update holdings
         dh = dict((k, v) for k, v in [(s, 0) for s in self.symbol_list])
-        dh['datetime'] = bars[self.symbol_list[0]][0][1]
+        dh['datetime'] = bars[self.symbol_list[0]]['Date']
         dh['cash'] = self.current_holdings['cash']
         dh['commission'] = self.current_holdings['commission']
         dh['total'] = self.current_holdings['cash']
 
         for s in self.symbol_list:
             # Approximation to the real value
-            market_value = self.current_positions[s] * bars[s][0][5]
+            market_value = self.current_positions[s] * bars[s]['Close']
             dh[s] = market_value
             dh['total'] += market_value
 
@@ -166,12 +166,11 @@ class NaivePortfolio(Portfolio):
         fill_dir = 0
         if fill.direction == 'BUY':
             fill_dir = 1
-        if fill.direciton == 'SELL':
+        if fill.direction == 'SELL':
             fill_dir = -1
 
         # Update holdings list with new quantities
-        fill_cost = self.bars.get_latest_bars(fill.symbol)[0][5]  # Close price
-        cost = fill_dir * fill_cost * fill.quantity
+        cost = fill_dir * fill.fill_cost * fill.quantity
         self.current_holdings[fill.symbol] += cost
         self.current_holdings['commission'] += fill.commission
         self.current_holdings['cash'] -= (cost + fill.commission)
@@ -184,7 +183,7 @@ class NaivePortfolio(Portfolio):
         """
         if event.type == 'FILL':
             self.update_positions_from_fill(event)
-            self.udpate_holdings_from_fill(event)
+            self.update_holdings_from_fill(event)
 
     def generate_naive_order(self, signal):
         """

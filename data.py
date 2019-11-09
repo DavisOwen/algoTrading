@@ -174,12 +174,11 @@ class QuandlAPIDataHandler(DataHandler):
         """
         self.events = events
         self.pickle_dir = pickle_dir
-        self.test_date = test_date
 
         self.latest_symbol_data = {}
         self.continue_backtest = True
 
-        self.update_symbol_list(symbol_list)
+        self.update_symbol_list(symbol_list, test_date)
 
     def _get_data_from_pickle(self):
         """
@@ -246,10 +245,10 @@ class QuandlAPIDataHandler(DataHandler):
         split events).
         """
         for index, row in self.symbol_data[symbol][self.test_date:].iterrows():
-            yield [symbol, index, row['Open'], row['Low'],
-                   row['High'], row['Close'],
-                   row['Volume'], row['Ex-Dividend'],
-                   row['Split Ratio']]
+            yield {'Symbol': symbol, 'Date': index, 'Open': row['Open'],
+                   'Low': row['Low'], 'High': row['High'],
+                   'Close': row['Close'], 'Volume': row['Volume'],
+                   'Dividend': row['Ex-Dividend'], 'Split': row['Split Ratio']}
 
     def get_latest_bars(self, symbol, N=1):
         """
@@ -274,11 +273,11 @@ class QuandlAPIDataHandler(DataHandler):
         :param bar: bar object to check if there was a split or div event
         :type bar: tuple
         """
-        symbol = bar[0]
-        date = bar[1]
-        close = bar[5]
-        ex_div = bar[7]
-        split = bar[8]
+        symbol = bar['Symbol']
+        date = bar['Date']
+        close = bar['Close']
+        ex_div = bar['Dividend']
+        split = bar['Split']
         adj_ratio = split
         adj_ratio *= (close + ex_div) / close
         if adj_ratio != 1.0:
@@ -289,7 +288,7 @@ class QuandlAPIDataHandler(DataHandler):
                                 ex_div=ex_div, split=split))
             for s in self.symbol_list:
                 for i, bar in enumerate(self.latest_symbol_data[s]):
-                    for j in range(2, 6):
+                    for j in ['High', 'Low', 'Open', 'Close']:
                         self.latest_symbol_data[s][i][j] /= adj_ratio
 
     def _adjust_data_train(self, bars):
@@ -349,7 +348,8 @@ class QuandlAPIDataHandler(DataHandler):
                     self.latest_symbol_data[s].append(bar)
         self.events.put(MarketEvent())
 
-    def update_symbol_list(self, symbols):
+    def update_symbol_list(self, symbols, test_date):
+        self.test_date = test_date
         self.symbol_list = symbols
         self.symbol_data = {}
         self._get_data_from_pickle()
