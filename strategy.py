@@ -199,5 +199,8 @@ class BollingerBandJohansenStrategy(Strategy):
                     self._order_portfolio(direction='LONG')
                     self.long = True
             else:
+                logger.info("Portfolio no longer stationary!")
                 self._order_portfolio(direction='EXIT')
+                self.long = False
+                self.short = False
                 self.hedge_ratio = self._find_stationary_portfolio()

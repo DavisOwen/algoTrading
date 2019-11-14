@@ -287,7 +287,7 @@ class QuandlAPIDataHandler(DataHandler):
                         .format(symbol=symbol, date=date, close=close,
                                 ex_div=ex_div, split=split))
             for s in self.symbol_list:
-                for i, bar in enumerate(self.latest_symbol_data[s]):
+                for i, bar in enumerate(self.latest_symbol_data[s][:-1]):
                     for j in ['High', 'Low', 'Open', 'Close']:
                         self.latest_symbol_data[s][i][j] /= adj_ratio
 
@@ -355,6 +355,7 @@ class QuandlAPIDataHandler(DataHandler):
         self._get_data_from_pickle()
         self._adjust_start_date()
         self.get_new_bars = self._get_new_bars_dict()
+        self.update_bars()
 
     def get_adj_close(self, start=None, end=None):
         """
