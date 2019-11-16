@@ -163,7 +163,7 @@ class QuandlAPIDataHandler(DataHandler):
     data - (float) Open, High, Low, Close, Volume, Ex-Dividend, Split Ratio,
     Adj. Open, Adj. High, Adj. Low, Adj. Close, Adj. Volume
     """
-    def __init__(self, events, pickle_dir, symbol_list, test_date):
+    def __init__(self, events, pickle_dir, symbol_list, test_date, adjust):
         """
         Initialises the quandl data handler.
 
@@ -177,6 +177,7 @@ class QuandlAPIDataHandler(DataHandler):
 
         self.latest_symbol_data = {}
         self.continue_backtest = True
+        self.adjust = adjust
 
         self.update_symbol_list(symbol_list, test_date)
 
@@ -344,7 +345,8 @@ class QuandlAPIDataHandler(DataHandler):
                 self.continue_backtest = False
             else:
                 if bar is not None:
-                    self._adjust_data_test(bar)
+                    if self.adjust:
+                        self._adjust_data_test(bar)
                     self.latest_symbol_data[s].append(bar)
         self.events.put(MarketEvent())
 

@@ -5,8 +5,6 @@ from math import floor
 
 from event import OrderEvent
 
-from performance import create_sharpe_ratio, create_drawdowns
-
 
 class Portfolio(object):
     """
@@ -66,6 +64,14 @@ class NaivePortfolio(Portfolio):
         self.all_holdings = self.construct_all_holdings()
         self.current_holdings = self.construct_current_holdings()
 
+    def _update_symbol_list(self, symbol_list):
+        self.symbol_list = symbol_list
+        for s in symbol_list:
+            if s not in self.current_positions:
+                self.current_positions[s] = 0
+            if s not in self.current_holdings:
+                self.current_holdings[s] = 0.0
+
     def construct_all_positions(self):
         """
         Constructs the positions list using the start_date
@@ -106,6 +112,8 @@ class NaivePortfolio(Portfolio):
 
         Makes use of a MarketEvent form the events queue.
         """
+        if self.bars.symbol_list != self.symbol_list:
+            self._update_symbol_list(self.bars.symbol_list)
         bars = {}
         for sym in self.symbol_list:
             bars[sym] = self.bars.get_latest_bars(sym, N=1)[0]
@@ -224,31 +232,13 @@ class NaivePortfolio(Portfolio):
             order_event = self.generate_naive_order(event)
             self.events.put(order_event)
 
-    def create_equity_curve_dataframe(self):
+    def create_results_dataframe(self):
         """
         Creates a pandas DataFrame from the all_holdings
         list of dictionaries.
         """
-        curve = pd.DataFrame(self.all_holdings)
-        curve.set_index('datetime', inplace=True)
-        curve['returns'] = curve['total'].pct_change()
-        curve['equity_curve'] = (1.0+curve['returns']).cumprod()
-        self.equity_curve = curve
-
-    def output_summary_stats(self):
-        """
-        Creates a list of summary statistics for the portfolio such
-        as Sharpe Ratio and drawdown information.
-        """
-        total_return = self.equity_curve['equity_curve'][-1]
-        returns = self.equity_curve['returns']
-        pnl = self.equity_curve['equity_curve']
-
-        sharpe_ratio = create_sharpe_ratio(returns)
-        max_dd, dd_duration = create_drawdowns(pnl)
-
-        stats = [("Total Return", "%0.2f%%" % ((total_return - 1.0) * 100.0)),
-                 ("Sharpe Ratio", "%0.2f" % sharpe_ratio),
-                 ("Max Drawdown", "%0.2f%%" % (max_dd * 100.0)),
-                 ("Drawdown Duration", "%d" % dd_duration)]
-        return stats
+        results = pd.DataFrame(self.all_holdings)
+        results.set_index('datetime', inplace=True)
+        results['returns'] = results['total'].pct_change()
+        results['equity_results'] = (1.0+results['returns']).cumprod()
+        return results

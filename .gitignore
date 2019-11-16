@@ -4,3 +4,5 @@ __pycache__
 *.csv
 tags
 algotrading
+logs
+results
