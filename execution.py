@@ -31,7 +31,8 @@ class ExecutionHandler(object):
         a Fill event that gets placed onto the Events queue.
 
         Parameters:
-        event - Contains an Event object with order information.
+        :param event: Contains an Event object with order information.
+        :type event: Event
         """
         raise NotImplementedError("Should implement execute_order()")
 
@@ -51,8 +52,8 @@ class SimulatedExecutionHandler(ExecutionHandler):
         Initialises the handler, setting the event queues
         up internally.
 
-        Parameters:
-        events - The Queue of Events objects.
+        :param events: The Queue of Events objects.
+        :type events: Queue
         """
         self.events = events
         self.bars = bars
@@ -62,8 +63,8 @@ class SimulatedExecutionHandler(ExecutionHandler):
         Simply converts Order objects into Fill objects naively,
         i.e. without any latency, slippage or fill ratio problems.
 
-        Parameters:
-        event - Contains an Event object with order information.
+        :param event: Contains an Event object with order information.
+        :type event: Event
         """
         if event.type == 'ORDER':
             fill_cost = self.bars.get_latest_bars(event.symbol)[0]['Close']

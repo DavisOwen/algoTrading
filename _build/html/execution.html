@@ -51,14 +51,15 @@ live trading engine.</p>
 <dd><p>Takes an Order event and executes it, producing
 a Fill event that gets placed onto the Events queue.</p>
 <p>Parameters:
-event - Contains an Event object with order information.</p>
+:param event: Contains an Event object with order information.
+:type event: Event</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="execution.SimulatedExecutionHandler">
-<em class="property">class </em><code class="sig-prename descclassname">execution.</code><code class="sig-name descname">SimulatedExecutionHandler</code><span class="sig-paren">(</span><em class="sig-param">events</em><span class="sig-paren">)</span><a class="headerlink" href="#execution.SimulatedExecutionHandler" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">execution.</code><code class="sig-name descname">SimulatedExecutionHandler</code><span class="sig-paren">(</span><em class="sig-param">events</em>, <em class="sig-param">bars</em><span class="sig-paren">)</span><a class="headerlink" href="#execution.SimulatedExecutionHandler" title="Permalink to this definition">¶</a></dt>
 <dd><p>The simulated execution handler simply converts all order
 objects into their equivalent fill objects automatically
 without latency, slippage or fill-ratio issues.</p>
@@ -70,8 +71,11 @@ handler.</p>
 <code class="sig-name descname">execute_order</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="headerlink" href="#execution.SimulatedExecutionHandler.execute_order" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simply converts Order objects into Fill objects naively,
 i.e. without any latency, slippage or fill ratio problems.</p>
-<p>Parameters:
-event - Contains an Event object with order information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>event</strong> (<a class="reference internal" href="event.html#event.Event" title="event.Event"><em>Event</em></a>) – Contains an Event object with order information.</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

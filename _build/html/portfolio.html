@@ -42,10 +42,29 @@ a brokerage object witha constant quantity size blindly,
 i.e. wihtout any risk management or position sizing. It is
 used to test simpler strategies such as BuyAndHoldStrategy</p>
 <dl class="method">
+<dt id="portfolio.NaivePortfolio._update_symbol_list">
+<code class="sig-name descname">_update_symbol_list</code><span class="sig-paren">(</span><em class="sig-param">symbol_list</em><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio._update_symbol_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>updates portfolio to use new symbol_list</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>symbol_list</strong> (<em>list</em><em>(</em><em>str</em><em>)</em>) – list of ticker symbols</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
 <dt id="portfolio.NaivePortfolio.construct_all_holdings">
 <code class="sig-name descname">construct_all_holdings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.construct_all_holdings" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constructs the holdings list using the start_date
 to determine when the time index will begin.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>list of dictionary of holdings</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>list(dict)</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -53,6 +72,14 @@ to determine when the time index will begin.</p>
 <code class="sig-name descname">construct_all_positions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.construct_all_positions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constructs the positions list using the start_date
 to determine when the time index will begin</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>list of dictionary of positions</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>list(dict)</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -60,13 +87,29 @@ to determine when the time index will begin</p>
 <code class="sig-name descname">construct_current_holdings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.construct_current_holdings" title="Permalink to this definition">¶</a></dt>
 <dd><p>This constructs the dictionary which will hold the instantaneous
 value of the portfolio across all symbols.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>dictionary of current holdings</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="portfolio.NaivePortfolio.create_equity_curve_dataframe">
-<code class="sig-name descname">create_equity_curve_dataframe</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.create_equity_curve_dataframe" title="Permalink to this definition">¶</a></dt>
+<dt id="portfolio.NaivePortfolio.create_results_dataframe">
+<code class="sig-name descname">create_results_dataframe</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.create_results_dataframe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a pandas DataFrame from the all_holdings
 list of dictionaries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>dataframe of the backtest returns</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>pd.Dataframe</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -75,15 +118,17 @@ list of dictionaries.</p>
 <dd><p>Simply transacts an OrderEvent object as a constant quantity
 sizing of the signal object, without risk management or
 position sizing considerations.</p>
-<p>Parameters:
-signal = The SignalEvent signal information</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="portfolio.NaivePortfolio.output_summary_stats">
-<code class="sig-name descname">output_summary_stats</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.output_summary_stats" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a list of summary statistics for the portfolio such
-as Sharpe Ratio and drawdown information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>signal</strong> (<a class="reference internal" href="event.html#event.SignalEvent" title="event.SignalEvent"><em>SignalEvent</em></a>) – The SignalEvent signal information</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>order object</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="event.html#event.OrderEvent" title="event.OrderEvent">OrderEvent</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -91,6 +136,9 @@ as Sharpe Ratio and drawdown information.</p>
 <code class="sig-name descname">update_fill</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.update_fill" title="Permalink to this definition">¶</a></dt>
 <dd><p>Updates the portfolio current positions and holdings
 from a FillEvent.</p>
+<p>Parameters:
+:param event: FillEvent object to update positions and holdings
+:type event: FillEvent</p>
 </dd></dl>
 
 <dl class="method">
@@ -98,8 +146,11 @@ from a FillEvent.</p>
 <code class="sig-name descname">update_holdings_from_fill</code><span class="sig-paren">(</span><em class="sig-param">fill</em><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.update_holdings_from_fill" title="Permalink to this definition">¶</a></dt>
 <dd><p>Takes a FillEvent object and updates the holdings matrix
 to reflect the holdings value.</p>
-<p>Parameters:
-fill - The FillEvent object to update the holdings with.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fill</strong> (<a class="reference internal" href="event.html#event.FillEvent" title="event.FillEvent"><em>FillEvent</em></a>) – The FillEvent object to update the holdings with.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -107,8 +158,11 @@ fill - The FillEvent object to update the holdings with.</p>
 <code class="sig-name descname">update_positions_from_fill</code><span class="sig-paren">(</span><em class="sig-param">fill</em><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.update_positions_from_fill" title="Permalink to this definition">¶</a></dt>
 <dd><p>Takes a FillEvent object and updates the position matrix
 to reflect the new position</p>
-<p>Parameters:
-fill - The FillEvent object to update the positions with.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fill</strong> (<a class="reference internal" href="event.html#event.FillEvent" title="event.FillEvent"><em>FillEvent</em></a>) – The FillEvent object to update the positions with.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -116,6 +170,11 @@ fill - The FillEvent object to update the positions with.</p>
 <code class="sig-name descname">update_signal</code><span class="sig-paren">(</span><em class="sig-param">event</em><span class="sig-paren">)</span><a class="headerlink" href="#portfolio.NaivePortfolio.update_signal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Acts on a SignalEvent to generate new orders
 based on the portfolio logic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>event</strong> (<a class="reference internal" href="event.html#event.SignalEvent" title="event.SignalEvent"><em>SignalEvent</em></a>) – SignalEvent object to update positions and holdings</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -125,6 +184,11 @@ based on the portfolio logic.</p>
 market data bar. This reflects the PREVIOUS bar, i.e. all
 current market data at this stage is known (OLHCVI).</p>
 <p>Makes use of a MarketEvent form the events queue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>event</strong> (<a class="reference internal" href="event.html#event.Event" title="event.Event"><em>Event</em></a>) – MarketEvent object</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

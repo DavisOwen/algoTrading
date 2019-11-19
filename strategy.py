@@ -48,9 +48,10 @@ class BuyAndHoldStrategy(Strategy):
         """
         Initialises the buy and hold strategy.
 
-        Parameters:
-        bars - The DataHandler object that provides bar information
-        events - The Event Queue object.
+        :param bars: The DataHandler object that provides bar information
+        :type bars: DataHandler
+        :param events: The Event Queue object.
+        :type events: Queue
         """
         self.bars = bars
         self.symbol_list = self.bars.symbol_list
@@ -63,6 +64,10 @@ class BuyAndHoldStrategy(Strategy):
         """
         Adds keys to the bought dictionary for all symbols
         and sets them to False.
+
+        :return: dictionary of booleans for whether symbol has \
+        been bought or not
+        :rtype: dict
         """
         bought = {}
         for s in self.symbol_list:
@@ -76,8 +81,8 @@ class BuyAndHoldStrategy(Strategy):
         constantly long the market from the date of strategy
         initialisation.
 
-        Parameters
-        event = A MarketEvent object.
+        :param event: A MarketEvent object.
+        :type event: MarketEvent
         """
         if event.type == 'MARKET':
             for s in self.symbol_list:
@@ -100,9 +105,10 @@ class BollingerBandJohansenStrategy(Strategy):
         """
         Initialises the bollinger band johansen strategy.
 
-        Parameters:
-        bars - The DataHandler object that provides bar information
-        events - The Event Queue object.
+        :param bars: The DataHandler object that provides bar information
+        :type bars: DataHandler
+        :param events: The Event Queue object.
+        :type events: Queue
         """
         self.bars = bars
         self.events = events
@@ -118,10 +124,13 @@ class BollingerBandJohansenStrategy(Strategy):
 
     def _find_stationary_portfolio(self):
         """
-        TODO: scrape all s&p tickers and
-        create DataHandler object to generate
-        hedge ratio for. If hedge ratio is stationary,
-        return the DataHandler object.
+        Iterates through s&p stocks sorted by oldest, creating combinations of
+        12 stock large portfolios. Generates a hedge ratio for each of these
+        portfolios and checks if it creates a stationary time series. If it
+        does, will return the hedge ratio, otherwise, will exit program
+
+        :return: hedge ratio
+        :rtype: list(float)
         """
         tickers = self.bars.sort_oldest()
         for port in combinations(tickers, 12):
@@ -146,6 +155,16 @@ class BollingerBandJohansenStrategy(Strategy):
         sys.exit(0)
 
     def _current_portfolio_price(self, price_type):
+        """
+        generates the current portfolio price of price_type
+
+        Parameters:
+        :param price_type: price type (open, close, high, low)
+        :type price_type: str
+
+        :return: current portfolio price
+        :rtype: float
+        """
         prices = []
         for i, s in enumerate(self.bars.symbol_list):
             bar = self.bars.get_latest_bars(s, N=1)[0]
@@ -158,6 +177,13 @@ class BollingerBandJohansenStrategy(Strategy):
         return dot(prices, self.hedge_ratio)
 
     def _order_portfolio(self, direction):
+        """
+        creates signal event to order all symbols in symbol list
+        with given direction and strength based on hedge ratio
+
+        :param direction: direction of signal ('LONG', 'SHORT', 'EXIT')
+        :type direction: str
+        """
         for i, s in enumerate(self.bars.symbol_list):
             bar = self.bars.get_latest_bars(s, N=1)[0]
             signal = SignalEvent(bar['Symbol'], bar['Date'], direction,
@@ -171,9 +197,12 @@ class BollingerBandJohansenStrategy(Strategy):
     def calculate_signals(self, event):
         """
         Calculates how many standard deviations away
-        the current bar is from rolling average of the portfolio
+        the current bar is from rolling average of the portfolio.
+        If goes above or below defined entry and exit point, will
+        long, short, or exit portfolio accordingly. If portfolio is no
+        longer stationary, will exit all positions and find new stationary
+        portfolio
 
-        Parameters:
         :param event: Event object
         :type event: Event
         """
@@ -184,7 +213,7 @@ class BollingerBandJohansenStrategy(Strategy):
                 rolling_avg = mean(self.portfolio_prices)
                 rolling_std = stdev(self.portfolio_prices)
                 zscore = (price - rolling_avg) / rolling_std
-                logger.debug(zscore)
+                logger.debug("zscore: {zscore}".format(zscore=zscore))
 
                 if self.long and zscore >= self.exit:
                     self._order_portfolio(direction='EXIT')

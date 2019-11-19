@@ -28,11 +28,14 @@ class SignalEvent(Event):
         """
         Initialises the SignalEvent.
 
-        Parameters:
-        symbol - The ticker symbol, e.g. 'GOOG'.
-        datetime - The timestamp at which the signal was generated.
-        signal_type - 'LONG', 'SHORT', or 'EXIT'.
-        strength - amount of ticker to order
+        :param symbol: The ticker symbol, e.g. 'GOOG'.
+        :type symbol: str
+        :param datetime: The timestamp at which the signal was generated.
+        :type datetime: datetime
+        :param signal_type: 'LONG', 'SHORT', or 'EXIT'
+        :type signal_type: str
+        :param strength: amount of ticker to order
+        :type strength: float
         """
         self.type = 'SIGNAL'
         self.symbol = symbol
@@ -54,11 +57,14 @@ class OrderEvent(Event):
         a quantity (integral) and its direction ('BUY' or
         'SELL').
 
-        Parameters:
-        symbol - The instrument to trade.
-        order_type - 'MKT' or 'LMT' for Market or Limit.
-        quantity - Non-negative integer for quantity.
-        direction - 'BUY' or 'SELL' for long or short.
+        :param symbol: The instrument to trade
+        :type symbol: str
+        :param order_type: 'MKT' or 'LMT' for Market or Limit.
+        :type order_type: str
+        :param quantity: Non-negative integer for quantity.
+        :type quantity: int
+        :param direction: 'BUY' or 'SELL' for long or short.
+        :type direction: str
         """
         self.type = 'ORDER'
         self.symbol = symbol
@@ -94,14 +100,20 @@ class FillEvent(Event):
         calculate it based on the trade size and Interactive
         Broker fees.
 
-        Parameters:
-        timeindex - The bar-resolution when the order was filled.
-        symbol - The instrument which was filled
-        exchange - The exchange where the order was filled.
-        quantity - The filled quantity.
-        direction - The direction of fill ('BUY' or 'SELL')
-        fill_cost - The holdings value in dollars.
-        commission - An optional commission sent from IB.
+        :param timeindex: The bar-resolution when the order was filled.
+        :type timeindex: datetime
+        :param symbol: The instrument which was filled
+        :type symbol: str
+        :param exchange: The exchange where the order was filled.
+        :type exchange: str
+        :param quantity: The filled quantity.
+        :type quantity: int
+        :param direction: The direction of fill ('BUY' or 'SELL')
+        :type direction: str
+        :param fill_cost: The holdings value in dollars.
+        :type fill_cost: float
+        :param commission: - (optional) commission sent from IB.
+        :type commission: float
         """
 
         self.type = 'FILL'
@@ -127,6 +139,9 @@ class FillEvent(Event):
 
         Based on "US API Directed Orders":
         https://www.interactivebrokers.com/en/index.php?f=commission&p=stocks2
+
+        :return: simulated ib commission cost
+        :rtype: float
         """
         full_cost = 1.3
         if self.quantity <= 500:

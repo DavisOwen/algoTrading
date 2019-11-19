@@ -45,11 +45,14 @@ class NaivePortfolio(Portfolio):
         Also includes a starting datetime index and initial capital
         (USD unless otherwise stated).
 
-        Parameters:
-        bars - The DataHandler object with current market data.
-        events - The Event Queue object.
-        start_date - The start date (bar) of the portfolio.
-        initial_capital - The starting capital in USD.
+        :param bars: The DataHandler object with current market data
+        :type bars: DataHandler
+        :param events: The Event Queue object
+        :type events: Queue
+        :param start_date: The start date (bar) of the portfolio.
+        :type start_date: datetime
+        :param initial_capital: The starting capital in USD.
+        :type initial_capital: float
         """
         self.bars = bars
         self.events = events
@@ -65,6 +68,12 @@ class NaivePortfolio(Portfolio):
         self.current_holdings = self.construct_current_holdings()
 
     def _update_symbol_list(self, symbol_list):
+        """
+        updates portfolio to use new symbol_list
+
+        :param symbol_list: list of ticker symbols
+        :type symbol_list: list(str)
+        """
         self.symbol_list = symbol_list
         for s in symbol_list:
             if s not in self.current_positions:
@@ -76,6 +85,9 @@ class NaivePortfolio(Portfolio):
         """
         Constructs the positions list using the start_date
         to determine when the time index will begin
+
+        :return: list of dictionary of positions
+        :rtype: list(dict)
         """
         d = dict((k, v) for k, v in [(s, 0) for s in self.symbol_list])
         d['datetime'] = self.start_date
@@ -85,6 +97,9 @@ class NaivePortfolio(Portfolio):
         """
         Constructs the holdings list using the start_date
         to determine when the time index will begin.
+
+        :return: list of dictionary of holdings
+        :rtype: list(dict)
         """
         d = dict((k, v) for k, v in [(s, 0.0) for s in self.symbol_list])
         d['datetime'] = self.start_date
@@ -97,6 +112,9 @@ class NaivePortfolio(Portfolio):
         """
         This constructs the dictionary which will hold the instantaneous
         value of the portfolio across all symbols.
+
+        :return: dictionary of current holdings
+        :rtype: dict
         """
         d = dict((k, v) for k, v in [(s, 0.0) for s in self.symbol_list])
         d['cash'] = self.initial_capital
@@ -111,6 +129,9 @@ class NaivePortfolio(Portfolio):
         current market data at this stage is known (OLHCVI).
 
         Makes use of a MarketEvent form the events queue.
+
+        :param event: MarketEvent object
+        :type event: Event
         """
         if self.bars.symbol_list != self.symbol_list:
             self._update_symbol_list(self.bars.symbol_list)
@@ -149,8 +170,8 @@ class NaivePortfolio(Portfolio):
         Takes a FillEvent object and updates the position matrix
         to reflect the new position
 
-        Parameters:
-        fill - The FillEvent object to update the positions with.
+        :param fill: The FillEvent object to update the positions with.
+        :type fill: FillEvent
         """
         # Check whether the fill is a buy or sell
         fill_dir = 0
@@ -167,8 +188,8 @@ class NaivePortfolio(Portfolio):
         Takes a FillEvent object and updates the holdings matrix
         to reflect the holdings value.
 
-        Parameters:
-        fill - The FillEvent object to update the holdings with.
+        :param fill: The FillEvent object to update the holdings with.
+        :type fill: FillEvent
         """
         # Check whether the fill is a buy or sell
         fill_dir = 0
@@ -188,6 +209,10 @@ class NaivePortfolio(Portfolio):
         """
         Updates the portfolio current positions and holdings
         from a FillEvent.
+
+        Parameters:
+        :param event: FillEvent object to update positions and holdings
+        :type event: FillEvent
         """
         if event.type == 'FILL':
             self.update_positions_from_fill(event)
@@ -199,8 +224,11 @@ class NaivePortfolio(Portfolio):
         sizing of the signal object, without risk management or
         position sizing considerations.
 
-        Parameters:
-        signal = The SignalEvent signal information
+        :param signal: The SignalEvent signal information
+        :type signal: SignalEvent
+
+        :return: order object
+        :rtype: OrderEvent
         """
         order = None
 
@@ -227,6 +255,9 @@ class NaivePortfolio(Portfolio):
         """
         Acts on a SignalEvent to generate new orders
         based on the portfolio logic.
+
+        :param event: SignalEvent object to update positions and holdings
+        :type event: SignalEvent
         """
         if event.type == 'SIGNAL':
             order_event = self.generate_naive_order(event)
@@ -236,9 +267,12 @@ class NaivePortfolio(Portfolio):
         """
         Creates a pandas DataFrame from the all_holdings
         list of dictionaries.
+
+        :return: dataframe of the backtest returns
+        :rtype: pd.Dataframe
         """
         results = pd.DataFrame(self.all_holdings)
         results.set_index('datetime', inplace=True)
         results['returns'] = results['total'].pct_change()
-        results['equity_results'] = (1.0+results['returns']).cumprod()
+        results['equity_curve'] = (1.0+results['returns']).cumprod()
         return results

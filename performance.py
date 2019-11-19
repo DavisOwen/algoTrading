@@ -12,7 +12,18 @@ logger = logging.getLogger("backtester")
 
 
 class PerformanceHandler(object):
+    """
+    Object for saving and loading backtest results and log files.
+    Includes functions to analyze results such as plot_equity_curve
+    """
     def __init__(self, results_dir):
+        """
+        Initializes PerformanceHandler. Loads current backtest number or
+        creates new backtest number starting from 0. Sets results directory
+
+        :param results_dir: Directory to store and load backtest results
+        :type results_dir: str
+        """
         try:
             self.backtest_number = pickle.load(
                 open("backtest_number.pickle", 'rb'))
@@ -24,6 +35,13 @@ class PerformanceHandler(object):
         self.results_dir = results_dir
 
     def construct_logger(self, logger_dir):
+        """
+        Constructs logger with file handler with backtest_number, stream
+        handler, and formatter
+
+        :param logger_dir: directory to store log file
+        :type logger_dir: str
+        """
         self.backtest_number += 1
         pickle.dump(
             self.backtest_number,
@@ -40,14 +58,26 @@ class PerformanceHandler(object):
         logger.addHandler(file)
 
     def save_results(self, results):
+        """
+        saves results to pickle file keyed based on backtest_number
+
+        :param results: results object to save
+        :type results: pd.Dataframe
+        """
         self.results = results
         pickle.dump(self.results, open(os.path.join(
             self.results_dir,
             "backtest_{num}.pickle".format(num=self.backtest_number)), 'wb'))
 
     def load_results(self):
+        """
+        loads result object and creates simply stream handler for logging
+        """
+        logger.setLevel(logging.DEBUG)
+        ch = logging.StreamHandler()
+        logger.addHandler(ch)
         self.results = pickle.load(open(
-            os.path.join("backtest_{num}.pickle".format(
+            os.path.join(self.results_dir, "backtest_{num}.pickle".format(
                 num=self.backtest_number)), 'rb'))
 
     def output_summary_stats(self):
@@ -66,31 +96,37 @@ class PerformanceHandler(object):
             ((total_return - 1.0) * 100.0))),
                 ("Sharpe Ratio", "{0:.2f}".format(sharpe_ratio)),
                 ("Max Drawdown", "{0:.2f}".format(max_dd * 100.0)),
-                ("Drawdown Duration", "{0:d}".format(dd_duration))]
+                ("Drawdown Duration", "{0:.0f}".format(dd_duration))]
         logger.info(stats)
 
-    def _create_sharpe_ratio(returns, periods=252):
+    def _create_sharpe_ratio(self, returns, periods=252):
         """
         Create the Sharpe ratio for the strategy, based on a
         benchmark of zero (i.e. no risk-free rate information).
 
-        Parameters:
-        returns - A pandas Series representing period percentage returns.
-        periods - Daily (252), Hourly (252*6.5), Minutely(252*6.5*60) etc.
-        """
-        return np.sqrt(periods) * (np.mean(returns)) / np.std(returns)
+        :param returns: a pandas Series representing period percentage returns
+        :type returns: pd.Series
+        :param periods: Daily (252), Hourly (252*6.5), Minutely(252*6.5*60) etc
+        :type periods: int
 
-    def _create_drawdowns(equity_curve):
+        :return: sharpe ratio
+        :rtype: float
+        """
+        return np.sqrt(periods) * (np.mean(returns) / np.std(returns))
+
+    def _create_drawdowns(self, equity_curve):
         """
         Calculate the largest peak-to-trough drawdown of the PnL curve
         as well as the duration of the drawdown. Requires that the
         pnl_returs is a pandas Series.
 
-        Parameters:
-        pnl - A pandas Series representing period percentage returns.
+        :param equity_curve: a pandas Series representing period percentage \
+        returns.
+        :type equity_curve: pd.Series
 
-        Returns:
-        drawdown, duration - Highest peak-to-trough drawdown and duration.
+        :return: drawdown, duration - highest peak-to-trough drawdown and \
+        duration
+        :rtype: float, float
         """
         # Calculate the cumulative returns curve
         # and set up the High Water Mark
@@ -109,5 +145,8 @@ class PerformanceHandler(object):
         return drawdown.max(), duration.max()
 
     def plot_equity_curve(self):
+        """
+        Plots the equity_curve using matplotlib.pyplot
+        """
         plt.plot(self.results['equity_curve'])
         plt.show()

@@ -71,5 +71,5 @@ while True:
 logger.info("Backtest completed")
 results = port.create_results_dataframe()
 performance.save_results(results)
-results.plot_equity_curve()
-results.output_summary_stats
+performance.plot_equity_curve()
+performance.output_summary_stats()

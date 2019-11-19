@@ -63,10 +63,12 @@ class HistoricCSVDataHandler(DataHandler):
         It will be assumed that all files are of the form
         'symbol.csv', where symbol is a string in the list.
 
-        Parameters:
-        events - The Event Queue.
-        csv_dir - Absolute directory path to the CSV files.
-        symbol_list - A list of symbol strings.
+        :param events: the event Queue
+        :type events: Queue
+        :param csv_dir: absolute directory path to the CSV files
+        :type csv_dir: str
+        :param symbol_list: a list of symbol strings
+        :type symbol_list: list(str)
         """
         self.events = events
         self.csv_dir = csv_dir
@@ -115,8 +117,13 @@ class HistoricCSVDataHandler(DataHandler):
 
     def _get_new_bar(self, symbol):
         """
-        Returns the latest bar from the data feed as a tuple of
-        (symbol, datetime, open, low, high, close, volume).
+        Returns the latest bar from the data feed
+
+        :param symbol: ticker symbol to get bar for
+        :type symbol: str
+
+        :return: bar data (symbol, datetime, open, low, high, close, volume)
+        :rtype: tuple
         """
         for b in self.symbol_data[symbol]:
             yield tuple([symbol,
@@ -127,6 +134,14 @@ class HistoricCSVDataHandler(DataHandler):
         """
         Returns the last N bars from the latest_symbol list,
         or N-k if less available.
+
+        :param symbol: ticker symbol to get bar for
+        :type symbol: str
+        :param N: (optional) number of bars to get
+        :type N: int
+
+        :return: list of bars
+        :rtype: list(tuple)
         """
         try:
             bars_list = self.latest_symbol_data[symbol]
@@ -167,10 +182,17 @@ class QuandlAPIDataHandler(DataHandler):
         """
         Initialises the quandl data handler.
 
-        Parameters:
-        events - events queue object
-        pickle_dir - directory to find and save pickle objects
-        symbol_list - list of symbols in backtest
+        :param events: events Queue object
+        :type events: Queue
+        :param pickle_dir: directory to find and save pickle objects
+        :type events: str
+        :param symbol_list: list of symbols in backtest
+        :type symbol_list: list(str)
+        :param test_date: start date for backtest
+        :type test_date: datetime
+        :param adjust: whether or not to adjust previous bar data after
+        split or dividend payment (helps speed if not necessary)
+        :type adjust: boolean
         """
         self.events = events
         self.pickle_dir = pickle_dir
@@ -199,6 +221,12 @@ class QuandlAPIDataHandler(DataHandler):
             self.latest_symbol_data[sec] = []
 
     def sort_oldest(self):
+        """
+        Sorts all s&p tickers by oldest stocks
+
+        :return: sorted list of ticker
+        :rtype: list(str)
+        """
         tickers = scrape_list()
         tickers = listify(tickers)
         date_dict = {}
@@ -216,6 +244,9 @@ class QuandlAPIDataHandler(DataHandler):
                                      key=operator.itemgetter(1))]
 
     def _adjust_start_date(self):
+        """
+        Sets the start date for generating training set
+        """
         self.train_date = self._get_train_date()
         for s in self.symbol_list:
             self.symbol_data[s] = self.symbol_data[s][self.train_date:]
@@ -224,8 +255,11 @@ class QuandlAPIDataHandler(DataHandler):
         """
         Downloads security from quandl and saves to pickle_dir
 
-        Parameters:
-        sec - security ticker
+        :param sec: security ticker
+        :type sec: str
+
+        :return: quandl ticker data
+        :rtype: pd.Dataframe
         """
         logger.info("Downloading {sec}".format(sec=sec))
         data = quandl.get("WIKI/{sec}".format(sec=sec))
@@ -234,6 +268,14 @@ class QuandlAPIDataHandler(DataHandler):
         return data
 
     def _get_new_bars_dict(self):
+        """
+        Auxilliary dictionary to keep track of each symbols
+        _get_new_bars() generators, so that we can continue to
+        call next() and get the next bar for each symbol.
+
+        :return: dictionary of generator functions
+        :rtype: dict(generator)
+        """
         get_new_bars = {}
         for s in self.symbol_list:
             get_new_bars[s] = self._get_new_bars(s)
@@ -241,9 +283,17 @@ class QuandlAPIDataHandler(DataHandler):
 
     def _get_new_bars(self, symbol):
         """
-        Returns the latest bar from the data feed as a tuple of
-        (symbol, datetime, open, low, high, close, volume, dividend events and
-        split events).
+        Returns the latest bar from the data feed
+
+        Parameters:
+
+        :param symbol: ticker symbol to get bar for
+        :type symbol: str
+
+        :return: dictionary of bar data with format \
+        (symbol, datetime, open, low, high, close, volume, dividend events \
+        and split events)
+        :rtype: dict
         """
         for index, row in self.symbol_data[symbol][self.test_date:].iterrows():
             yield {'Symbol': symbol, 'Date': index, 'Open': row['Open'],
@@ -255,6 +305,14 @@ class QuandlAPIDataHandler(DataHandler):
         """
         Returns the last N bars from the latest_symbol list,
         or N-k if less available.
+
+        :param symbol: bar symbol
+        :type symbol: str
+        :param N: number of bars to fetch
+        :type N: int
+
+        :return: list of bars
+        :rtype: list(dict)
         """
         try:
             bars_list = self.latest_symbol_data[symbol]
@@ -270,7 +328,6 @@ class QuandlAPIDataHandler(DataHandler):
         on the given bar, and if there is, will adjust
         all previous bars prices based on split or div
 
-        Paramters:
         :param bar: bar object to check if there was a split or div event
         :type bar: tuple
         """
@@ -294,8 +351,13 @@ class QuandlAPIDataHandler(DataHandler):
 
     def _adjust_data_train(self, bars):
         """
-        TODO figure this shit out
-        I figured it out
+        Adjusts all data in training set based on splits and dividend events
+
+        :param bars: dataframe of training data
+        :type bars: pd.Dataframe
+
+        :return: adjusted training data
+        :rtype: pd.Dataframe
         """
         start = None
         for index in bars[(bars['Split Ratio'] != 1.0)
@@ -311,6 +373,12 @@ class QuandlAPIDataHandler(DataHandler):
         return bars
 
     def _get_train_date(self):
+        """
+        Returns the latest common date between all stocks in symbol_list
+
+        :return: earliest common date of all stocks
+        :rtype: datetime
+        """
         latest = datetime.datetime.min
         for s in self.symbol_list:
             date = self.symbol_data[s].index[0]
@@ -319,6 +387,13 @@ class QuandlAPIDataHandler(DataHandler):
         return latest
 
     def generate_train_set(self, price_type):
+        """
+        Generates training set
+
+        :param price_type: price type to use for train set i.e. \
+        open, close, etc.
+        :type price_type: str
+        """
         logger.info("Generating training set for {price_type} data. "
                     "Starting at {start_date} and ending at {end_date}"
                     .format(price_type=price_type,
@@ -351,6 +426,16 @@ class QuandlAPIDataHandler(DataHandler):
         self.events.put(MarketEvent())
 
     def update_symbol_list(self, symbols, test_date):
+        """
+        Updates symbol list and calls functions to get the quandl data,
+        adjusts start date for train set, sets up generator functions,
+        and updates the initial bar
+
+        :param symbols: new symbol list
+        :type symbols: list(str)
+        :param test_date: current date of backtest
+        :type test_date: datetime
+        """
         self.test_date = test_date
         self.symbol_list = symbols
         self.symbol_data = {}
@@ -364,7 +449,6 @@ class QuandlAPIDataHandler(DataHandler):
         gets adj_close data for all tickers provided for
         specific time period
 
-        Parameters:
         :param start: (optional) start date for adj_close data
         :type start: datetime
         :param end: (optional) end date for adj_close data

@@ -68,10 +68,50 @@ each requested symbol from disk and provides an interface
 to obtain the “latest” bar in a manner identical to a live
 trading interface.</p>
 <dl class="method">
+<dt id="data.HistoricCSVDataHandler._get_new_bar">
+<code class="sig-name descname">_get_new_bar</code><span class="sig-paren">(</span><em class="sig-param">symbol</em><span class="sig-paren">)</span><a class="headerlink" href="#data.HistoricCSVDataHandler._get_new_bar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the latest bar from the data feed</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>symbol</strong> (<em>str</em>) – ticker symbol to get bar for</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>bar data (symbol, datetime, open, low, high, close, volume)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.HistoricCSVDataHandler._open_convert_csv_files">
+<code class="sig-name descname">_open_convert_csv_files</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#data.HistoricCSVDataHandler._open_convert_csv_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Opens the CSV files from the data directory, converting
+them into pandas DataFrames within a symbol dictionary.</p>
+<p>For this handler it will be assumed that the data is
+taken from DTN IQFeed. Thus its format will be respected.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="data.HistoricCSVDataHandler.get_latest_bars">
 <code class="sig-name descname">get_latest_bars</code><span class="sig-paren">(</span><em class="sig-param">symbol</em>, <em class="sig-param">N=1</em><span class="sig-paren">)</span><a class="headerlink" href="#data.HistoricCSVDataHandler.get_latest_bars" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the last N bars from the latest_symbol list,
 or N-k if less available.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>symbol</strong> (<em>str</em>) – ticker symbol to get bar for</p></li>
+<li><p><strong>N</strong> (<em>int</em>) – (optional) number of bars to get</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of bars</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list(tuple)</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -84,34 +124,212 @@ for all symbols in the symbol list.</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="data.QuandlDataHandler">
-<em class="property">class </em><code class="sig-prename descclassname">data.</code><code class="sig-name descname">QuandlDataHandler</code><span class="sig-paren">(</span><em class="sig-param">events</em>, <em class="sig-param">pickle_dir</em>, <em class="sig-param">symbol_list</em><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlDataHandler" title="Permalink to this definition">¶</a></dt>
+<dt id="data.QuandlAPIDataHandler">
+<em class="property">class </em><code class="sig-prename descclassname">data.</code><code class="sig-name descname">QuandlAPIDataHandler</code><span class="sig-paren">(</span><em class="sig-param">events</em>, <em class="sig-param">pickle_dir</em>, <em class="sig-param">symbol_list</em>, <em class="sig-param">test_date</em>, <em class="sig-param">adjust</em><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler" title="Permalink to this definition">¶</a></dt>
 <dd><p>DataHandler class that pulls data from quandl using supplied tickers.
 If data exists in pickle files, will load from pickle, if they do
 not exist, will save data to pickle file</p>
 <p>Data format for quandl is:
 index - (pd.Timestamp) date
-data - (float) Open, High, Low, Close, Volume, Ex-Dividend, Split-Ratio,
+data - (float) Open, High, Low, Close, Volume, Ex-Dividend, Split Ratio,
 Adj. Open, Adj. High, Adj. Low, Adj. Close, Adj. Volume</p>
 <dl class="method">
-<dt id="data.QuandlDataHandler.get_adj_close">
-<code class="sig-name descname">get_adj_close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlDataHandler.get_adj_close" title="Permalink to this definition">¶</a></dt>
-<dd><p>gets adj_close data for all tickers provided for
-full time period</p>
+<dt id="data.QuandlAPIDataHandler._adjust_data_test">
+<code class="sig-name descname">_adjust_data_test</code><span class="sig-paren">(</span><em class="sig-param">bar</em><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler._adjust_data_test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if there is a dividend for split event
+on the given bar, and if there is, will adjust
+all previous bars prices based on split or div</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>bar</strong> (<em>tuple</em>) – bar object to check if there was a split or div event</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="data.QuandlDataHandler.get_latest_bars">
-<code class="sig-name descname">get_latest_bars</code><span class="sig-paren">(</span><em class="sig-param">symbol</em>, <em class="sig-param">N=1</em><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlDataHandler.get_latest_bars" title="Permalink to this definition">¶</a></dt>
+<dt id="data.QuandlAPIDataHandler._adjust_data_train">
+<code class="sig-name descname">_adjust_data_train</code><span class="sig-paren">(</span><em class="sig-param">bars</em><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler._adjust_data_train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adjusts all data in training set based on splits and dividend events</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>bars</strong> (<em>pd.Dataframe</em>) – dataframe of training data</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>adjusted training data</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.Dataframe</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.QuandlAPIDataHandler._adjust_start_date">
+<code class="sig-name descname">_adjust_start_date</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler._adjust_start_date" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the start date for generating training set</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.QuandlAPIDataHandler._download_quandl_ticker">
+<code class="sig-name descname">_download_quandl_ticker</code><span class="sig-paren">(</span><em class="sig-param">sec</em><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler._download_quandl_ticker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Downloads security from quandl and saves to pickle_dir</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sec</strong> (<em>str</em>) – security ticker</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>quandl ticker data</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.Dataframe</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.QuandlAPIDataHandler._get_data_from_pickle">
+<code class="sig-name descname">_get_data_from_pickle</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler._get_data_from_pickle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries to load data from the pickle file, and if
+not found will run _download_quandl_ticker() to download
+the security from quandl and store it in pickle format</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.QuandlAPIDataHandler._get_new_bars">
+<code class="sig-name descname">_get_new_bars</code><span class="sig-paren">(</span><em class="sig-param">symbol</em><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler._get_new_bars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the latest bar from the data feed</p>
+<p>Parameters:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>symbol</strong> (<em>str</em>) – ticker symbol to get bar for</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dictionary of bar data with format         (symbol, datetime, open, low, high, close, volume, dividend events         and split events)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.QuandlAPIDataHandler._get_new_bars_dict">
+<code class="sig-name descname">_get_new_bars_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler._get_new_bars_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Auxilliary dictionary to keep track of each symbols
+_get_new_bars() generators, so that we can continue to
+call next() and get the next bar for each symbol.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>dictionary of generator functions</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict(generator)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.QuandlAPIDataHandler._get_train_date">
+<code class="sig-name descname">_get_train_date</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler._get_train_date" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the latest common date between all stocks in symbol_list</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>earliest common date of all stocks</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>datetime</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.QuandlAPIDataHandler.generate_train_set">
+<code class="sig-name descname">generate_train_set</code><span class="sig-paren">(</span><em class="sig-param">price_type</em><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler.generate_train_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates training set</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>price_type</strong> (<em>str</em>) – price type to use for train set i.e.         open, close, etc.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.QuandlAPIDataHandler.get_adj_close">
+<code class="sig-name descname">get_adj_close</code><span class="sig-paren">(</span><em class="sig-param">start=None</em>, <em class="sig-param">end=None</em><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler.get_adj_close" title="Permalink to this definition">¶</a></dt>
+<dd><p>gets adj_close data for all tickers provided for
+specific time period</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start</strong> (<em>datetime</em>) – (optional) start date for adj_close data</p></li>
+<li><p><strong>end</strong> (<em>datetime</em>) – (optional) end date for adj_close data</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>adjusted close data</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.QuandlAPIDataHandler.get_latest_bars">
+<code class="sig-name descname">get_latest_bars</code><span class="sig-paren">(</span><em class="sig-param">symbol</em>, <em class="sig-param">N=1</em><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler.get_latest_bars" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the last N bars from the latest_symbol list,
 or N-k if less available.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>symbol</strong> (<em>str</em>) – bar symbol</p></li>
+<li><p><strong>N</strong> (<em>int</em>) – number of bars to fetch</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of bars</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list(dict)</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="data.QuandlDataHandler.update_bars">
-<code class="sig-name descname">update_bars</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlDataHandler.update_bars" title="Permalink to this definition">¶</a></dt>
+<dt id="data.QuandlAPIDataHandler.sort_oldest">
+<code class="sig-name descname">sort_oldest</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler.sort_oldest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sorts all s&amp;p tickers by oldest stocks</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>sorted list of ticker</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>list(str)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.QuandlAPIDataHandler.update_bars">
+<code class="sig-name descname">update_bars</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler.update_bars" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pushes the latest bar to the latest_symbol_data structure
 for all symbols in the symbol list.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.QuandlAPIDataHandler.update_symbol_list">
+<code class="sig-name descname">update_symbol_list</code><span class="sig-paren">(</span><em class="sig-param">symbols</em>, <em class="sig-param">test_date</em><span class="sig-paren">)</span><a class="headerlink" href="#data.QuandlAPIDataHandler.update_symbol_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates symbol list and calls functions to get the quandl data,
+adjusts start date for train set, sets up generator functions,
+and updates the initial bar</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>symbols</strong> (<em>list</em><em>(</em><em>str</em><em>)</em>) – new symbol list</p></li>
+<li><p><strong>test_date</strong> (<em>datetime</em>) – current date of backtest</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
