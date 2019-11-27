@@ -1,4 +1,5 @@
 import os
+import sys
 import pickle
 import logging
 import numpy as np
@@ -76,9 +77,19 @@ class PerformanceHandler(object):
         logger.setLevel(logging.DEBUG)
         ch = logging.StreamHandler()
         logger.addHandler(ch)
-        self.results = pickle.load(open(
-            os.path.join(self.results_dir, "backtest_{num}.pickle".format(
-                num=self.backtest_number)), 'rb'))
+        try:
+            self.results = pickle.load(open(
+                os.path.join(self.results_dir, "backtest_{num}.pickle".format(
+                    num=self.backtest_number)), 'rb'))
+        except FileNotFoundError:
+            self.backtest_number -= 1
+            if self.backtest_number == 0:
+                logger.error("no backtest files found!")
+                sys.exit(0)
+            pickle.dump(
+                self.backtest_number,
+                open("backtest_number.pickle", 'wb'))
+            self.load_results()
 
     def output_summary_stats(self):
         """

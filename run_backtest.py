@@ -24,9 +24,7 @@ results_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
 # symbol_list = ['AYI', 'APA', 'AMZN', 'LNT', 'CTL',
 #                'ALB', 'ABBV', 'AMT', 'ADM', 'AON', 'ORCL']
 symbol_list = []
-start_date = datetime.datetime(2017, 1, 2)
-enter = 0.5
-exit = 0
+start_date = datetime.datetime(2000, 1, 2)
 
 # Logging and performance objects
 performance = PerformanceHandler(results_dir)
@@ -36,7 +34,7 @@ logger = logging.getLogger("backtester")
 # Objects
 bars = QuandlAPIDataHandler(events, pickle_dir, symbol_list,
                             start_date, False)
-strategy = BollingerBandJohansenStrategy(bars, events, enter, exit, start_date)
+strategy = BollingerBandJohansenStrategy(bars, events, start_date)
 port = NaivePortfolio(bars, events, start_date)
 broker = SimulatedExecutionHandler(events, bars)
 

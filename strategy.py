@@ -4,6 +4,7 @@ import sys
 import logging
 from statistics import mean, stdev
 from itertools import combinations
+from pykalman import KalmanFilter
 
 from abc import ABCMeta, abstractmethod
 
@@ -101,7 +102,7 @@ class BollingerBandJohansenStrategy(Strategy):
     Uses a Johansen test to create a mean reverting portfolio,
     and uses bollinger bands strategy using resuling hedge ratios.
     """
-    def __init__(self, bars, events, enter, exit, start_date):
+    def __init__(self, bars, events, start_date):
         """
         Initialises the bollinger band johansen strategy.
 
@@ -112,15 +113,20 @@ class BollingerBandJohansenStrategy(Strategy):
         """
         self.bars = bars
         self.events = events
-        self.enter = enter
-        self.exit = exit
         self.current_date = start_date
 
         # self.hedge_ratio = generate_hedge_ratio(
         #     self.bars.generate_train_set('Close'))
+        self.kf = KalmanFilter(transition_matrices=[1],
+                               observation_matrices=[1],
+                               initial_state_mean=0,
+                               initial_state_covariance=1,
+                               observation_covariance=1,
+                               transition_covariance=0.01)
         self.hedge_ratio = self._find_stationary_portfolio()
         self.long = False
         self.short = False
+        self.enter = 2.0
 
     def _find_stationary_portfolio(self):
         """
@@ -148,7 +154,29 @@ class BollingerBandJohansenStrategy(Strategy):
                         is_stationary(self.portfolio_prices):
                     logger.info("Stationary portfolio found. Tickers: {port}"
                                 .format(port=port))
+                    # self.portfolio_prices = self.portfolio_prices.tolist()
+                    # amp = np.fft.fft(self.portfolio_prices)
+                    # amp = np.absolute(amp) / len(self.portfolio_prices)
+                    # sort_idx = np.argsort(amp)
+                    # max_amp_idx = sort_idx[-2]
+                    # f = np.fft.fftfreq(len(self.portfolio_prices))
+                    # max_freq = f[max_amp_idx]
+                    # max_amp = amp[max_amp_idx]
+                    # self.rolling_window = int(round(1 / max_freq))
+                    state_means, state_cov = self.kf.filter(
+                        self.portfolio_prices)
+                    state_means = state_means.flatten()
+                    state_cov = state_cov.flatten()
+                    self.avg = state_means[-1]
+                    self.cov = state_cov[-1]
+                    self.diff_list = self.portfolio_prices - state_means
+                    self.diff_list = self.diff_list.tolist()
                     self.portfolio_prices = self.portfolio_prices.tolist()
+                    # self.enter = (max_amp - (
+                    #     self.portfolio_prices)) / stdev(
+                    #         self.portfolio_prices)
+                    # self.enter = (max_amp - self.avg) / self.cov
+                    # logger.debug(self.enter)
                     return hedge_ratio
             logger.info("{port} not stationary".format(port=port))
         logger.error("No stationary portfolios found!")
@@ -210,15 +238,25 @@ class BollingerBandJohansenStrategy(Strategy):
             price = self._current_portfolio_price('Close')
             self.portfolio_prices.append(price)
             if is_stationary(self.portfolio_prices):
-                rolling_avg = mean(self.portfolio_prices)
-                rolling_std = stdev(self.portfolio_prices)
-                zscore = (price - rolling_avg) / rolling_std
+                state_means, state_cov = self.kf.filter_update(
+                    self.avg, self.cov, price)
+                state_means = state_means.flatten()
+                state_cov = state_cov.flatten()
+                # rolling_avg = mean(
+                #     self.portfolio_prices[-self.rolling_window:])
+                self.avg = state_means[-1]
+                self.cov = state_cov[-1]
+                self.diff_list.append(price - self.avg)
+                std = stdev(self.diff_list)
+                # rolling_std = stdev(
+                #     self.portfolio_prices[-self.rolling_window:])
+                zscore = (self.diff_list[-1]) / std
                 logger.debug("zscore: {zscore}".format(zscore=zscore))
 
-                if self.long and zscore >= self.exit:
+                if self.long and zscore >= 0.0:
                     self._order_portfolio(direction='EXIT')
                     self.long = False
-                elif self.short and zscore <= -self.exit:
+                elif self.short and zscore <= 0.0:
                     self._order_portfolio(direction='EXIT')
                     self.short = False
                 elif not self.short and zscore >= self.enter:
