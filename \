@@ -1,9 +1,7 @@
 from utils import generate_hedge_ratio, dot, is_stationary
 import numpy as np
-import pandas as pd
 import sys
 import logging
-import datetime
 from statistics import mean, stdev
 from itertools import combinations
 from pykalman import KalmanFilter
@@ -115,92 +113,26 @@ class KalmanPairTradeStrategy(Strategy):
     Quantopian's 2015 summer lecture series. Please direct any
     questions, feedback, or corrections to dedwards@quantopian.com
     """
-    def __init__(self, bars, portfolio, events, pairs):
+    def __init__(self, bars, events, pairs):
         self.bars = bars
         self.events = events
         self.pairs = []
-        self.portfolio = portfolio
 
         for pair in pairs:
-            self.pairs.append(KalmanPairTrade(pair, self.bars, self.events,
-                                              self.portfolio))
+            self.pairs.append(KalmanPairTrade(pair))
 
     def calculate_signals(self, event):
         if event.type == 'MARKET':
             for pair in self.pairs:
-                KalmanPairTrade.calculate_signal()
+                KalmanPairTrade.calculate_signal(self.events)
 
 
 class KalmanPairTrade(object):
-    def __init__(self, pair, bars, events, portfolio):
+    def __init__(self, pair):
         self._x = pair[0]
         self._y = pair[1]
         self.X = KalmanMovingAverage(self._x)
         self.Y = KalmanMovingAverage(self._y)
-        self.bars = bars
-        self.events = events
-        self.initialize_filters()
-        self.entry_dt = pd.Timestamp('1900-01-01', tz='utc')
-        self.portfolio = portfolio
-
-    def calculate_signal(self):
-        self.update()
-        spreads = self.mean_spread()
-
-        zscore = (spreads[-1] - spreads.mean()) / spreads.std()
-
-        reference_pos = self.portfolio.get_current_holdings()[self._y].total
-
-        now = datetime.datetime.now()
-        if reference_pos:
-            if (now - self.entry_dt).days > 20:
-                x_signal = SignalEvent(self.x_bar.symbol, self.x_bar.datetime,
-                                       'EXIT')
-                y_signal = SignalEvent(self.y_bar.symbol, self.x_bar.datetime,
-                                       'EXIT')
-                self.events.put(x_signal)
-                self.events.put(y_signal)
-                return
-            else:
-                if zscore > 1.5:
-                    x_signal = SignalEvent(self.x_bar.symbol, self.leverage
-                                           / 2.)
-                    y_signal = SignalEvent(self.y_bar.symbol, -self.leverage
-                                           / 2.)
-                    self.entry_dt = now
-                    self.events.put(x_signal)
-                    self.events.put(y_signal)
-                if zscore < 1.5:
-                    x_signal = SignalEvent(self.x_bar.symbol, -self.leverage
-                                           / 2.)
-                    y_signal = SignalEvent(self.y_bar.symbol, self.leverage
-                                           / 2.)
-                    self.entry_dt = now
-                    self.events.put(x_signal)
-                    self.events.put(y_signal)
-
-    def update(self):
-        self.x_bar = self.bars.get_latest_bars(self._x, N=1)[0]
-        self.y_bar = self.bars.get_latest_bars(self._y, N=1)[1]
-        self.X.update(self.x_bar)
-        self.Y.update(self.y_bar)
-        self.kf.update(self.X.state_means[-1], self.Y.state_means[-1])
-
-    def mean_spread(self):
-        means = self.means_frame()
-        beta, alpha = self.kf.state_mean
-        return means[self._y] - (beta * means[self._x] + alpha)
-
-    def means_frame(self):
-        mu_Y = self.Y.state_means
-        mu_X = self.X.state_means
-        return pd.DataFrame([mu_Y, mu_X]).T
-
-    def initialize_filters(self):
-        prices = self.bars.generate_train_set('Close')
-        self.X.update(prices)
-        self.Y.update(prices)
-        self.kf = KalmanRegression(self.X.state_means, self.Y.state_means)
 
 
 class KalmanMovingAverage(object):
@@ -227,33 +159,6 @@ class KalmanMovingAverage(object):
                                         observation)
         self.state_means.append(mu.flatten())
         self.state_vars.append(cov.flatten())
-
-
-class KalmanRegression(object):
-    def __init__(self, x_state_mean, y_state_mean, delta=1e-5):
-        trans_cov = delta / (1 - delta) * np.eye(2)
-        obs_mat = np.expand_dims(
-            np.vstack([[x_state_mean],
-                       [np.ones(x_state_mean.shape[0])]]).T, axis=1)
-        self.kf = KalmanFilter(n_dim_obs=1, n_dim_state=2,
-                               initial_state_mean=np.zeros(2),
-                               initial_state_covariance=np.ones((2, 2)),
-                               transition_matrices=np.eye(2),
-                               observation_matrices=obs_mat,
-                               observation_covariance=1.0,
-                               transition_covariance=trans_cov)
-        means, cov = self.kf.filter(y_state_mean.values)
-        self.mean = mean[-1]
-        self.cov = cov[-1]
-
-    def update(self, x, y):
-        self.mean, self.cov = self.kf.filter_update(
-            self.mean, self.cov, y,
-            observation_matrix=np.array([[x, 1.0]]))
-
-    @property
-    def state_mean(self):
-        return self.mean[-1]
 
 
 class BollingerBandJohansenStrategy(Strategy):

@@ -122,6 +122,12 @@ class NaivePortfolio(Portfolio):
         d['total'] = self.initial_capital
         return d
 
+    def get_current_positions(self):
+        return self.current_positions
+
+    def get_current_holdings(self):
+        return self.current_holdings
+
     def update_timeindex(self, event):
         """
         Adds a new record to the positions matrix for the current
