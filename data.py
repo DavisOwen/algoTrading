@@ -387,7 +387,7 @@ class QuandlAPIDataHandler(DataHandler):
                 latest = date
         return latest
 
-    def generate_train_set(self, price_type):
+    def generate_train_set_all(self, price_type):
         """
         Generates training set
 
@@ -401,13 +401,16 @@ class QuandlAPIDataHandler(DataHandler):
                             start_date=self.train_date,
                             end_date=self.test_date))
         train_set = []
-        for s in self.symbol_list:
-            bars = self.symbol_data[s].iloc[:self.symbol_data[s].index
-                                            .get_loc(self.test_date,
-                                                     method='backfill')]
-            adjusted_bars = self._adjust_data_train(bars)
-            train_set.append(adjusted_bars[price_type])
+        for s in self.symbol_lists:
+            train_set.append(self.generate_train_set(s, price_type))
         return train_set
+
+    def generate_train_set(self, sec, price_type):
+        bars = self.symbol_data[sec].iloc[:self.symbol_data[sec].index
+                                          .get_loc(self.test_date,
+                                                   method='backfill')]
+        adjusted_bars = self._adjust_data_train(bars)
+        return adjusted_bars[price_type]
 
     def update_bars(self):
         """

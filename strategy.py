@@ -197,9 +197,10 @@ class KalmanPairTrade(object):
         return pd.DataFrame([mu_Y, mu_X]).T
 
     def initialize_filters(self):
-        prices = self.bars.generate_train_set('Close')
-        self.X.update(prices)
-        self.Y.update(prices)
+        prices_x = self.bars.generate_train_set(self._x, 'Close')
+        prices_y = self.bars.generate_train_set(self._y, 'Close')
+        self.X.update(prices_x)
+        self.Y.update(prices_y)
         self.kf = KalmanRegression(self.X.state_means, self.Y.state_means)
 
 
@@ -208,8 +209,8 @@ class KalmanMovingAverage(object):
                  initial_state_covariance=1.0, transition_covariance=0.05):
         self.asset = asset
         self.kf = KalmanFilter(
-            transition=[1],
-            observation=[1],
+            transition_matrices=[1],
+            observation_matrices=[1],
             initial_state_mean=initial_value,
             initial_state_covariance=initial_state_covariance,
             observation_covariance=observation_covariance,
@@ -300,7 +301,7 @@ class BollingerBandJohansenStrategy(Strategy):
         tickers = self.bars.sort_oldest()
         for port in combinations(tickers, 12):
             self.bars.update_symbol_list(port, self.current_date)
-            prices = self.bars.generate_train_set('Close')
+            prices = self.bars.generate_train_set_all('Close')
             try:
                 results = generate_hedge_ratio(prices)
             except np.linalg.LinAlgError as error:
