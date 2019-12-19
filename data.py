@@ -11,6 +11,10 @@ from abc import ABCMeta, abstractmethod
 
 from event import MarketEvent
 
+
+pickle_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                          "pickle_files")
+
 logger = logging.getLogger("backtester")
 quandl.ApiConfig.api_key = 'AfS6bPzj1CsRFyYxCcvz'
 
@@ -178,14 +182,12 @@ class QuandlAPIDataHandler(DataHandler):
     data - (float) Open, High, Low, Close, Volume, Ex-Dividend, Split Ratio,
     Adj. Open, Adj. High, Adj. Low, Adj. Close, Adj. Volume
     """
-    def __init__(self, events, pickle_dir, symbol_list, test_date, adjust):
+    def __init__(self, events, symbol_list, test_date, adjust):
         """
         Initialises the quandl data handler.
 
         :param events: events Queue object
         :type events: Queue
-        :param pickle_dir: directory to find and save pickle objects
-        :type events: str
         :param symbol_list: list of symbols in backtest
         :type symbol_list: list(str)
         :param test_date: start date for backtest
@@ -195,7 +197,6 @@ class QuandlAPIDataHandler(DataHandler):
         :type adjust: boolean
         """
         self.events = events
-        self.pickle_dir = pickle_dir
 
         self.latest_symbol_data = {}
         self.continue_backtest = True
@@ -212,7 +213,7 @@ class QuandlAPIDataHandler(DataHandler):
         for sec in self.symbol_list:
             try:
                 self.symbol_data[sec] = pickle.load(open(os.path.join(
-                                            self.pickle_dir,
+                                            pickle_dir,
                                             "{sec}.pickle".format(sec=sec)),
                                                          'rb'))
             except FileNotFoundError:
@@ -233,7 +234,7 @@ class QuandlAPIDataHandler(DataHandler):
         for ticker in tickers:
             try:
                 sec = pickle.load(open(os.path.join(
-                                self.pickle_dir,
+                                pickle_dir,
                                 "{sec}.pickle".format(sec=ticker)),
                                    'rb'))
             except FileNotFoundError:
@@ -264,7 +265,7 @@ class QuandlAPIDataHandler(DataHandler):
         logger.info("Downloading {sec}".format(sec=sec))
         data = quandl.get("WIKI/{sec}".format(sec=sec))
         pickle.dump(data, open(os.path.join(
-            self.pickle_dir, "{sec}.pickle".format(sec=sec)), 'wb'))
+            pickle_dir, "{sec}.pickle".format(sec=sec)), 'wb'))
         return data
 
     def _get_new_bars_dict(self):
