@@ -4,7 +4,7 @@ import pandas as pd
 import sys
 import logging
 import datetime
-from statistics import mean, stdev
+from statistics import stdev
 from itertools import combinations
 from pykalman import KalmanFilter
 
@@ -128,7 +128,7 @@ class KalmanPairTradeStrategy(Strategy):
     def calculate_signals(self, event):
         if event.type == 'MARKET':
             for pair in self.pairs:
-                KalmanPairTrade.calculate_signal()
+                pair.calculate_signal()
 
 
 class KalmanPairTrade(object):
@@ -147,9 +147,9 @@ class KalmanPairTrade(object):
         self.update()
         spreads = self.mean_spread()
 
-        zscore = (spreads[-1] - spreads.mean()) / spreads.std()
+        zscore = (spreads.iloc[-1] - spreads.mean()) / spreads.std()
 
-        reference_pos = self.portfolio.get_current_holdings()[self._y].total
+        reference_pos = self.portfolio.get_current_holdings()[self._y]
 
         now = datetime.datetime.now()
         if reference_pos:
@@ -181,9 +181,9 @@ class KalmanPairTrade(object):
 
     def update(self):
         self.x_bar = self.bars.get_latest_bars(self._x, N=1)[0]
-        self.y_bar = self.bars.get_latest_bars(self._y, N=1)[1]
-        self.X.update(self.x_bar)
-        self.Y.update(self.y_bar)
+        self.y_bar = self.bars.get_latest_bars(self._y, N=1)[0]
+        self.X.update(self.x_bar['Close'])
+        self.Y.update(self.y_bar['Close'])
         self.kf.update(self.X.state_means[-1], self.Y.state_means[-1])
 
     def mean_spread(self):
@@ -194,13 +194,13 @@ class KalmanPairTrade(object):
     def means_frame(self):
         mu_Y = self.Y.state_means
         mu_X = self.X.state_means
-        return pd.DataFrame([mu_Y, mu_X]).T
+        return pd.DataFrame([mu_Y, mu_X], [self._y, self._x]).T
 
     def initialize_filters(self):
         prices_x = self.bars.generate_train_set(self._x, 'Close')
         prices_y = self.bars.generate_train_set(self._y, 'Close')
-        self.X.update(prices_x)
-        self.Y.update(prices_y)
+        self.X.update_all(prices_x)
+        self.Y.update_all(prices_y)
         self.kf = KalmanRegression(self.X.state_means, self.Y.state_means)
 
 
@@ -218,16 +218,16 @@ class KalmanMovingAverage(object):
         self.state_means = [self.kf.initial_state_mean]
         self.state_vars = [self.kf.initial_state_covariance]
 
-    def update(self, observations):
+    def update_all(self, observations):
         for observation in observations:
-            self._update(observation)
+            self.update(observation)
 
-    def _update(self, observation):
+    def update(self, observation):
         mu, cov = self.kf.filter_update(self.state_means[-1],
                                         self.state_vars[-1],
                                         observation)
-        self.state_means.append(mu.flatten())
-        self.state_vars.append(cov.flatten())
+        self.state_means.append(mu.flatten()[0])
+        self.state_vars.append(cov.flatten()[0])
 
 
 class KalmanRegression(object):
@@ -235,7 +235,7 @@ class KalmanRegression(object):
         trans_cov = delta / (1 - delta) * np.eye(2)
         obs_mat = np.expand_dims(
             np.vstack([[x_state_mean],
-                       [np.ones(x_state_mean.shape[0])]]).T, axis=1)
+                       [np.ones(len(x_state_mean))]]).T, axis=1)
         self.kf = KalmanFilter(n_dim_obs=1, n_dim_state=2,
                                initial_state_mean=np.zeros(2),
                                initial_state_covariance=np.ones((2, 2)),
@@ -243,8 +243,8 @@ class KalmanRegression(object):
                                observation_matrices=obs_mat,
                                observation_covariance=1.0,
                                transition_covariance=trans_cov)
-        means, cov = self.kf.filter(y_state_mean.values)
-        self.mean = mean[-1]
+        means, cov = self.kf.filter(y_state_mean)
+        self.mean = means[-1]
         self.cov = cov[-1]
 
     def update(self, x, y):
@@ -254,7 +254,7 @@ class KalmanRegression(object):
 
     @property
     def state_mean(self):
-        return self.mean[-1]
+        return self.mean
 
 
 class BollingerBandJohansenStrategy(Strategy):

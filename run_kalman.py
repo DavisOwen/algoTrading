@@ -12,7 +12,7 @@ from backtester import Backtester
 events = Queue()
 symbol_list = ['STX', 'WDC', 'CBI', 'JEC', 'MAS', 'VMC', 'JPM', 'C', 'AON',
                'MMC', 'COP', 'CVX']
-pairs = [('STX', 'WDC'), ('CBI', 'JEC'), ('MAX', 'VMC'), ('JPM', 'C'),
+pairs = [('STX', 'WDC'), ('CBI', 'JEC'), ('MAS', 'VMC'), ('JPM', 'C'),
          ('AON', 'MMC'), ('COP', 'CVX')]
 start_date = datetime.datetime(2017, 1, 2)
 

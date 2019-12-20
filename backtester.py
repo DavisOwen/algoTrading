@@ -18,11 +18,11 @@ class Backtester(object):
         self.events = events
         self.bars = bars
         self.strategy = strategy
-        self.port = port,
+        self.port = port
         self.broker = broker
 
     def start(self):
-        logger.info("Starting Backtest on {date}".format(date=self.start_date))
+        logger.info("Starting Backtest")
 
         # Main Loop
         while True:
