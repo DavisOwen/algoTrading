@@ -242,7 +242,8 @@ class NaivePortfolio(Portfolio):
         direction = signal.signal_type
         strength = signal.strength
 
-        mkt_quantity = floor(100 * strength)
+        if direction != 'EXIT':
+            mkt_quantity = floor(100 * strength)
         cur_quantity = self.current_positions[symbol]
         order_type = 'MKT'
 
@@ -269,16 +270,18 @@ class NaivePortfolio(Portfolio):
             order_event = self.generate_naive_order(event)
             self.events.put(order_event)
 
-    def create_results_dataframe(self):
+    def generate_results(self):
         """
-        Creates a pandas DataFrame from the all_holdings
-        list of dictionaries.
+        Creates a dictionary with all holdings
+        and all positions as Dataframes
 
-        :return: dataframe of the backtest returns
-        :rtype: pd.Dataframe
+        :return: dict of holdings and positions
+        :rtype: dict
         """
-        results = pd.DataFrame(self.all_holdings)
-        results.set_index('datetime', inplace=True)
-        results['returns'] = results['total'].pct_change()
-        results['equity_curve'] = (1.0+results['returns']).cumprod()
-        return results
+        holdings = pd.DataFrame(self.all_holdings)
+        holdings.set_index('datetime', inplace=True)
+        positions = pd.DataFrame(self.all_positions)
+        positions.set_index('datetime', inplace=True)
+        holdings['returns'] = holdings['total'].pct_change()
+        holdings['equity_curve'] = (1.0+holdings['returns']).cumprod()
+        return {'holdings': holdings, 'positions': positions}

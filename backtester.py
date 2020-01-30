@@ -47,14 +47,16 @@ class Backtester(object):
                         elif event.type == 'SIGNAL':
                             self.port.update_signal(event)
                         elif event.type == 'ORDER':
+                            logger.info(event)
                             self.broker.execute_order(event)
                         elif event.type == 'FILL':
+                            logger.info(event)
                             self.port.update_fill(event)
 
         logger.info("Backtest completed")
 
     def show_performance(self):
-        results = self.port.create_results_dataframe()
+        results = self.port.generate_results()
         performance.save_results(results)
         performance.plot_equity_curve()
         performance.output_summary_stats()

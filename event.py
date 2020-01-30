@@ -72,14 +72,15 @@ class OrderEvent(Event):
         self.quantity = quantity
         self.direction = direction
 
-    def print_order(self):
+    def __str__(self):
         """
         Outputs the values within the Order.
         """
-        print("Order: Symbol={symbol}, Type={order_type},\
-              Quantity={quantity}, Direction={direction}"
-              .format(self.symbol, self.order_type,
-                      self.quantity, self.direction))
+        return (
+            "Order: Symbol={sym}, Type={order_type}, "
+            "Quantity={quant}, Direction={direction}"
+        ).format(sym=self.symbol, order_type=self.order_type,
+                 quant=self.quantity, direction=self.direction)
 
 
 class FillEvent(Event):
@@ -151,3 +152,13 @@ class FillEvent(Event):
         full_cost = min(full_cost, 0.5 / 100.0
                         * self.quantity * self.fill_cost)
         return full_cost
+
+    def __str__(self):
+        """
+        Outputs the values within the Fill.
+        """
+        return (
+            "Fill: Symbol={sym}, Time={time}, "
+            "Quantity={quant}, Direction={direction}"
+        ).format(sym=self.symbol, time=self.timeindex,
+                 quant=self.quantity, direction=self.direction)

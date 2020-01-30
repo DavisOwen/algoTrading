@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import sys
 import logging
-import datetime
 from statistics import stdev
 from itertools import combinations
 from pykalman import KalmanFilter
@@ -115,15 +114,16 @@ class KalmanPairTradeStrategy(Strategy):
     Quantopian's 2015 summer lecture series. Please direct any
     questions, feedback, or corrections to dedwards@quantopian.com
     """
-    def __init__(self, bars, portfolio, events, pairs):
+    def __init__(self, bars, portfolio, events, pairs, leverage):
         self.bars = bars
         self.events = events
         self.pairs = []
         self.portfolio = portfolio
+        self.leverage = leverage
 
         for pair in pairs:
             self.pairs.append(KalmanPairTrade(pair, self.bars, self.events,
-                                              self.portfolio))
+                                              self.portfolio, self.leverage))
 
     def calculate_signals(self, event):
         if event.type == 'MARKET':
@@ -132,7 +132,7 @@ class KalmanPairTradeStrategy(Strategy):
 
 
 class KalmanPairTrade(object):
-    def __init__(self, pair, bars, events, portfolio):
+    def __init__(self, pair, bars, events, portfolio, leverage):
         self._x = pair[0]
         self._y = pair[1]
         self.X = KalmanMovingAverage(self._x)
@@ -142,6 +142,7 @@ class KalmanPairTrade(object):
         self.initialize_filters()
         self.entry_dt = pd.Timestamp('1900-01-01', tz='utc')
         self.portfolio = portfolio
+        self.leverage = leverage
 
     def calculate_signal(self):
         self.update()
@@ -151,33 +152,38 @@ class KalmanPairTrade(object):
 
         reference_pos = self.portfolio.get_current_holdings()[self._y]
 
-        now = datetime.datetime.now()
+        now = self.x_bar['Date']
         if reference_pos:
-            if (now - self.entry_dt).days > 20:
-                x_signal = SignalEvent(self.x_bar.symbol, self.x_bar.datetime,
-                                       'EXIT')
-                y_signal = SignalEvent(self.y_bar.symbol, self.x_bar.datetime,
-                                       'EXIT')
+            if ((now - self.entry_dt).days > 20) or \
+                    (zscore > -0.0 and reference_pos > 0) or \
+                    (zscore < 0.0 and reference_pos < 0):
+                x_signal = SignalEvent(self.x_bar['Symbol'],
+                                       self.x_bar['Date'], 'EXIT')
+                y_signal = SignalEvent(self.y_bar['Symbol'],
+                                       self.y_bar['Date'], 'EXIT')
                 self.events.put(x_signal)
                 self.events.put(y_signal)
-                return
-            else:
-                if zscore > 1.5:
-                    x_signal = SignalEvent(self.x_bar.symbol, self.leverage
-                                           / 2.)
-                    y_signal = SignalEvent(self.y_bar.symbol, -self.leverage
-                                           / 2.)
-                    self.entry_dt = now
-                    self.events.put(x_signal)
-                    self.events.put(y_signal)
-                if zscore < 1.5:
-                    x_signal = SignalEvent(self.x_bar.symbol, -self.leverage
-                                           / 2.)
-                    y_signal = SignalEvent(self.y_bar.symbol, self.leverage
-                                           / 2.)
-                    self.entry_dt = now
-                    self.events.put(x_signal)
-                    self.events.put(y_signal)
+        else:
+            if zscore > 1.5:
+                x_signal = SignalEvent(self.x_bar['Symbol'],
+                                       self.x_bar['Date'], 'LONG',
+                                       self.leverage / 2.)
+                y_signal = SignalEvent(self.y_bar['Symbol'],
+                                       self.y_bar['Date'], 'SHORT',
+                                       self.leverage / 2.)
+                self.entry_dt = now
+                self.events.put(x_signal)
+                self.events.put(y_signal)
+            if zscore < -1.5:
+                x_signal = SignalEvent(self.x_bar['Symbol'],
+                                       self.x_bar['Date'], 'SHORT',
+                                       self.leverage / 2.)
+                y_signal = SignalEvent(self.y_bar['Symbol'],
+                                       self.y_bar['Date'], 'LONG',
+                                       self.leverage / 2.)
+                self.entry_dt = now
+                self.events.put(x_signal)
+                self.events.put(y_signal)
 
     def update(self):
         self.x_bar = self.bars.get_latest_bars(self._x, N=1)[0]

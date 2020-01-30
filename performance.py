@@ -96,9 +96,10 @@ class PerformanceHandler(object):
         Creates a list of summary statistics for the portfolio such
         as Sharpe Ratio and drawdown information.
         """
-        total_return = self.results['equity_curve'][-1]
-        returns = self.results['returns']
-        pnl = self.results['equity_curve']
+        holdings = self.results['holdings']
+        total_return = holdings['equity_curve'][-1]
+        returns = holdings['returns']
+        pnl = holdings['equity_curve']
 
         sharpe_ratio = self._create_sharpe_ratio(returns)
         max_dd, dd_duration = self._create_drawdowns(pnl)
@@ -159,5 +160,10 @@ class PerformanceHandler(object):
         """
         Plots the equity_curve using matplotlib.pyplot
         """
-        plt.plot(self.results['equity_curve'])
+        holdings = self.results['holdings']
+        positions = self.results['positions']
+        returns = holdings['equity_curve']
+        fills = positions.diff()[positions.diff() != 0.0].dropna().index.values
+        plt.plot(returns)
+        plt.scatter(fills, returns[returns.index.isin(fills)], c='red')
         plt.show()

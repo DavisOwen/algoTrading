@@ -67,8 +67,10 @@ class SimulatedExecutionHandler(ExecutionHandler):
         :type event: Event
         """
         if event.type == 'ORDER':
-            fill_cost = self.bars.get_latest_bars(event.symbol)[0]['Close']
-            fill_event = FillEvent(datetime.datetime.utcnow(), event.symbol,
+            bar = self.bars.get_latest_bars(event.symbol)[0]
+            fill_cost = bar['Close']
+            date = bar['Date']
+            fill_event = FillEvent(date, event.symbol,
                                    'ARCA', event.quantity,
                                    event.direction, fill_cost)
             self.events.put(fill_event)
