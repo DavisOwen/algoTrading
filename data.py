@@ -402,7 +402,7 @@ class QuandlAPIDataHandler(DataHandler):
                             start_date=self.train_date,
                             end_date=self.test_date))
         train_set = []
-        for s in self.symbol_lists:
+        for s in self.symbol_list:
             train_set.append(self.generate_train_set(s, price_type))
         return train_set
 
