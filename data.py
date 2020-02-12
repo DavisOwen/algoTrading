@@ -165,6 +165,7 @@ class HistoricCSVDataHandler(DataHandler):
                 bar = next(self._get_new_bars(s))
             except StopIteration:
                 self.continue_backtest = False
+                return
             else:
                 if bar is not None:
                     self.latest_symbol_data[s].append(bar)
@@ -412,11 +413,7 @@ class QuandlAPIDataHandler(DataHandler):
         adjusted_bars = self._adjust_data_train(bars)
         return adjusted_bars[price_type]
 
-    def update_bars(self):
-        """
-        Pushes the latest bar to the latest_symbol_data structure
-        for all symbols in the symbol list.
-        """
+    def update_new_bars(self):
         for s in self.symbol_list:
             try:
                 bar = next(self.get_new_bars[s])
@@ -427,7 +424,15 @@ class QuandlAPIDataHandler(DataHandler):
                     if self.adjust:
                         self._adjust_data_test(bar)
                     self.latest_symbol_data[s].append(bar)
-        self.events.put(MarketEvent())
+
+    def update_bars(self):
+        """
+        Pushes the latest bar to the latest_symbol_data structure
+        for all symbols in the symbol list.
+        """
+        self.update_new_bars()
+        if self.continue_backtest:
+            self.events.put(MarketEvent())
 
     def update_symbol_list(self, symbols, test_date):
         """
@@ -446,7 +451,7 @@ class QuandlAPIDataHandler(DataHandler):
         self._get_data_from_pickle()
         self._adjust_start_date()
         self.get_new_bars = self._get_new_bars_dict()
-        self.update_bars()
+        self.update_new_bars()
 
     def get_adj_close(self, start=None, end=None):
         """

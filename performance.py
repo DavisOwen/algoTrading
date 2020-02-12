@@ -61,10 +61,8 @@ class PerformanceHandler(object):
     def save_results(self, results):
         """
         saves results to pickle file keyed based on backtest_number
-
         :param results: results object to save
-        :type results: pd.Dataframe
-        """
+        :type results: pd.Dataframe """
         self.results = results
         pickle.dump(self.results, open(os.path.join(
             self.results_dir,
@@ -163,7 +161,8 @@ class PerformanceHandler(object):
         holdings = self.results['holdings']
         positions = self.results['positions']
         returns = holdings['equity_curve']
-        fills = positions.diff()[positions.diff() != 0.0].dropna().index.values
+        fills = positions.diff()[
+            positions.diff() != 0].dropna(how='all').index.values
         plt.plot(returns)
         plt.scatter(fills, returns[returns.index.isin(fills)], c='red')
         plt.show()

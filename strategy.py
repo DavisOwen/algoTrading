@@ -150,36 +150,42 @@ class KalmanPairTrade(object):
 
         zscore = (spreads.iloc[-1] - spreads.mean()) / spreads.std()
 
-        reference_pos = self.portfolio.get_current_holdings()[self._y]
+        reference_pos = self.portfolio.get_current_holdings()[self._y]['cost']
 
-        now = self.x_bar['Date']
+        x_symbol = self.x_bar['Symbol']
+        x_date = self.x_bar['Date']
+        y_symbol = self.y_bar['Symbol']
+        y_date = self.y_bar['Date']
+        now = x_date
         if reference_pos:
+            pnl = self.portfolio.get_pnl([x_symbol,
+                                         y_symbol])
             if ((now - self.entry_dt).days > 20) or \
-                    (zscore > -0.0 and reference_pos > 0) or \
-                    (zscore < 0.0 and reference_pos < 0):
-                x_signal = SignalEvent(self.x_bar['Symbol'],
-                                       self.x_bar['Date'], 'EXIT')
-                y_signal = SignalEvent(self.y_bar['Symbol'],
-                                       self.y_bar['Date'], 'EXIT')
+                    (zscore > -0.0 and reference_pos > 0 and pnl > 0) or \
+                    (zscore < 0.0 and reference_pos < 0 and pnl > 0):
+                x_signal = SignalEvent(x_symbol,
+                                       x_date, 'EXIT')
+                y_signal = SignalEvent(y_symbol,
+                                       y_date, 'EXIT')
                 self.events.put(x_signal)
                 self.events.put(y_signal)
         else:
             if zscore > 1.5:
-                x_signal = SignalEvent(self.x_bar['Symbol'],
-                                       self.x_bar['Date'], 'LONG',
+                x_signal = SignalEvent(x_symbol,
+                                       x_date, 'LONG',
                                        self.leverage / 2.)
-                y_signal = SignalEvent(self.y_bar['Symbol'],
-                                       self.y_bar['Date'], 'SHORT',
+                y_signal = SignalEvent(y_symbol,
+                                       y_date, 'SHORT',
                                        self.leverage / 2.)
                 self.entry_dt = now
                 self.events.put(x_signal)
                 self.events.put(y_signal)
             if zscore < -1.5:
-                x_signal = SignalEvent(self.x_bar['Symbol'],
-                                       self.x_bar['Date'], 'SHORT',
+                x_signal = SignalEvent(x_symbol,
+                                       x_date, 'SHORT',
                                        self.leverage / 2.)
-                y_signal = SignalEvent(self.y_bar['Symbol'],
-                                       self.y_bar['Date'], 'LONG',
+                y_signal = SignalEvent(y_symbol,
+                                       y_date, 'LONG',
                                        self.leverage / 2.)
                 self.entry_dt = now
                 self.events.put(x_signal)

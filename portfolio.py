@@ -1,4 +1,5 @@
 import pandas as pd
+import copy
 
 from abc import ABCMeta, abstractmethod
 from math import floor
@@ -60,11 +61,10 @@ class NaivePortfolio(Portfolio):
         self.start_date = start_date
         self.initial_capital = initial_capital
 
-        self.all_positions = self.construct_all_positions()
-        self.current_positions = dict((k, v) for k, v in
-                                      [(s, 0) for s in self.symbol_list])
+        self.all_positions = []
+        self.current_positions = self.construct_current_positions()
 
-        self.all_holdings = self.construct_all_holdings()
+        self.all_holdings = []
         self.current_holdings = self.construct_current_holdings()
 
     def _update_symbol_list(self, symbol_list):
@@ -79,7 +79,8 @@ class NaivePortfolio(Portfolio):
             if s not in self.current_positions:
                 self.current_positions[s] = 0
             if s not in self.current_holdings:
-                self.current_holdings[s] = 0.0
+                self.current_holdings[s]['cost'] = 0.0
+                self.current_holdings[s]['cost_basis'] = 0.0
 
     def construct_all_positions(self):
         """
@@ -101,12 +102,17 @@ class NaivePortfolio(Portfolio):
         :return: list of dictionary of holdings
         :rtype: list(dict)
         """
-        d = dict((k, v) for k, v in [(s, 0.0) for s in self.symbol_list])
+        d = dict((s, {'cost': 0.0,  'cost_basis': 0.0}) for s
+                 in self.symbol_list)
         d['datetime'] = self.start_date
         d['cash'] = self.initial_capital
         d['commission'] = 0.0
         d['total'] = self.initial_capital
         return [d]
+
+    def construct_current_positions(self):
+        return dict((k, v) for k, v in
+                    [(s, 0) for s in self.symbol_list])
 
     def construct_current_holdings(self):
         """
@@ -116,7 +122,8 @@ class NaivePortfolio(Portfolio):
         :return: dictionary of current holdings
         :rtype: dict
         """
-        d = dict((k, v) for k, v in [(s, 0.0) for s in self.symbol_list])
+        d = dict((s, {'cost': 0.0,  'cost_basis': 0.0}) for s
+                 in self.symbol_list)
         d['cash'] = self.initial_capital
         d['commission'] = 0.0
         d['total'] = self.initial_capital
@@ -151,12 +158,19 @@ class NaivePortfolio(Portfolio):
 
         for s in self.symbol_list:
             dp[s] = self.current_positions[s]
+            split = bars[s]['Split']
+            if split != 1.0:
+                dp[s] *= split
 
         # Append the current positions
+        self.current_positions = copy.deepcopy(dp)
         self.all_positions.append(dp)
 
         # Update holdings
-        dh = dict((k, v) for k, v in [(s, 0) for s in self.symbol_list])
+        dh = dict((s, {
+            'cost': 0.0,
+            'cost_basis': self.current_holdings[s]['cost_basis']})
+                  for s in self.symbol_list)
         dh['datetime'] = bars[self.symbol_list[0]]['Date']
         dh['cash'] = self.current_holdings['cash']
         dh['commission'] = self.current_holdings['commission']
@@ -165,9 +179,10 @@ class NaivePortfolio(Portfolio):
         for s in self.symbol_list:
             # Approximation to the real value
             market_value = self.current_positions[s] * bars[s]['Close']
-            dh[s] = market_value
+            dh[s]['cost'] = market_value
             dh['total'] += market_value
 
+        self.current_holdings = copy.deepcopy(dh)
         # Append the current holdings
         self.all_holdings.append(dh)
 
@@ -206,7 +221,8 @@ class NaivePortfolio(Portfolio):
 
         # Update holdings list with new quantities
         cost = fill_dir * fill.fill_cost * fill.quantity
-        self.current_holdings[fill.symbol] += cost
+        self.current_holdings[fill.symbol]['cost'] += cost
+        self.current_holdings[fill.symbol]['cost_basis'] = fill.fill_cost
         self.current_holdings['commission'] += fill.commission
         self.current_holdings['cash'] -= (cost + fill.commission)
         self.current_holdings['total'] -= (cost + fill.commission)
@@ -285,3 +301,11 @@ class NaivePortfolio(Portfolio):
         holdings['returns'] = holdings['total'].pct_change()
         holdings['equity_curve'] = (1.0+holdings['returns']).cumprod()
         return {'holdings': holdings, 'positions': positions}
+
+    def get_pnl(self, symbols):
+        pnl = 0.0
+        for s in symbols:
+            bar = self.bars.get_latest_bars(s, N=1)[0]
+            pnl += ((bar['Close'] - self.current_holdings[s]['cost_basis'])
+                    * self.current_positions[s])
+        return pnl
