@@ -40,7 +40,8 @@ class NaivePortfolio(Portfolio):
     i.e. wihtout any risk management or position sizing. It is
     used to test simpler strategies such as BuyAndHoldStrategy
     """
-    def __init__(self, bars, events, start_date, initial_capital=100000.0):
+    def __init__(self, bars, events, start_date, leverage=1000,
+                 initial_capital=100000.0):
         """
         Initialises the portfolio with bars and an event queue.
         Also includes a starting datetime index and initial capital
@@ -60,6 +61,7 @@ class NaivePortfolio(Portfolio):
         self.symbol_list = self.bars.symbol_list
         self.start_date = start_date
         self.initial_capital = initial_capital
+        self.leverage = leverage
 
         self.all_positions = []
         self.current_positions = self.construct_current_positions()
@@ -259,7 +261,7 @@ class NaivePortfolio(Portfolio):
         strength = signal.strength
 
         if direction != 'EXIT':
-            mkt_quantity = floor(100 * strength)
+            mkt_quantity = floor(self.leverage * strength)
         cur_quantity = self.current_positions[symbol]
         order_type = 'MKT'
 

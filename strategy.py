@@ -287,8 +287,6 @@ class BollingerBandJohansenStrategy(Strategy):
         self.events = events
         self.current_date = start_date
 
-        # self.hedge_ratio = generate_hedge_ratio(
-        #     self.bars.generate_train_set('Close'))
         self.kf = KalmanFilter(transition_matrices=[1],
                                observation_matrices=[1],
                                initial_state_mean=0,
@@ -341,8 +339,6 @@ class BollingerBandJohansenStrategy(Strategy):
                     state_cov = state_cov.flatten()
                     self.avg = state_means[-1]
                     self.cov = state_cov[-1]
-                    self.diff_list = self.portfolio_prices - state_means
-                    self.diff_list = self.diff_list.tolist()
                     self.portfolio_prices = self.portfolio_prices.tolist()
                     # self.enter = (max_amp - (
                     #     self.portfolio_prices)) / stdev(
@@ -386,12 +382,18 @@ class BollingerBandJohansenStrategy(Strategy):
         """
         for i, s in enumerate(self.bars.symbol_list):
             bar = self.bars.get_latest_bars(s, N=1)[0]
-            signal = SignalEvent(bar['Symbol'], bar['Date'], direction,
-                                 self.hedge_ratio[i])
+            sec_direction = direction
+            if direction == 'LONG' and self.hedge_ratio[i] < 0:
+                sec_direction = 'SHORT'
+            elif direction == 'SHORT' and self.hedge_ratio[i] > 0:
+                sec_direction = 'LONG'
+            signal = SignalEvent(bar['Symbol'], bar['Date'], sec_direction,
+                                 abs(self.hedge_ratio[i]))
             logger.info("Signal Event created for {sym} on {date} to "
-                        "{direction} with strength {strength}".format(
+                        "{sec_direction} with strength {strength}".format(
                             sym=bar['Symbol'], date=bar['Date'],
-                            direction=direction, strength=self.hedge_ratio[i]))
+                            sec_direction=sec_direction,
+                            strength=abs(self.hedge_ratio[i])))
             self.events.put(signal)
 
     def calculate_signals(self, event):
@@ -414,15 +416,9 @@ class BollingerBandJohansenStrategy(Strategy):
                     self.avg, self.cov, price)
                 state_means = state_means.flatten()
                 state_cov = state_cov.flatten()
-                # rolling_avg = mean(
-                #     self.portfolio_prices[-self.rolling_window:])
                 self.avg = state_means[-1]
                 self.cov = state_cov[-1]
-                self.diff_list.append(price - self.avg)
-                std = stdev(self.diff_list)
-                # rolling_std = stdev(
-                #     self.portfolio_prices[-self.rolling_window:])
-                zscore = (self.diff_list[-1]) / std
+                zscore = (price - self.avg) / self.cov
                 logger.debug("zscore: {zscore}".format(zscore=zscore))
 
                 if self.long and zscore >= 0.0:
