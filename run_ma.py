@@ -3,23 +3,19 @@
 import datetime
 from queue import Queue
 from data import QuandlAPIDataHandler
-from strategy import BollingerBandJohansenStrategy
+from strategy import MovingAverageCrossoverStrategy
 from portfolio import NaivePortfolio
 from execution import SimulatedExecutionHandler
 from backtester import Backtester
 
 # Paramters
 events = Queue()
-# symbol_list = ['ARNC', 'BA', 'CAT', 'DD', 'DIS', 'GE', 'HPQ', 'IBM', 'KO',
-#                'AEP', 'CNP', 'CVX']
-#symbol_list = ['AYI', 'APA', 'AMZN', 'LNT', 'CTL',
-#                'ALB', 'ABBV', 'AMT', 'ADM', 'AON', 'ORCL']
-symbol_list = []
+symbol_list = ["AMZN"]
 start_date = datetime.datetime(2017, 1, 2)
 
 # Objects
 bars = QuandlAPIDataHandler(events, symbol_list, start_date, False)
-strategy = BollingerBandJohansenStrategy(bars, events, start_date)
+strategy = MovingAverageCrossoverStrategy(bars, events, start_date)
 port = NaivePortfolio(bars, events, start_date)
 broker = SimulatedExecutionHandler(events, bars)
 

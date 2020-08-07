@@ -439,3 +439,50 @@ class BollingerBandJohansenStrategy(Strategy):
                 self.long = False
                 self.short = False
                 self.hedge_ratio = self._find_stationary_portfolio()
+
+class MovingAverageCrossoverStrategy(Strategy):
+
+    def __init__(self, bars, events, start_date):
+        """
+        Initialises the bollinger band johansen strategy.
+
+        :param bars: The DataHandler object that provides bar information
+        :type bars: DataHandler
+        :param events: The Event Queue object.
+        :type events: Queue
+        """
+        self.bars = bars
+        self.events = events
+        self.current_date = start_date
+        self.long = False
+        self.short = False
+
+    def _calculate_sma(self, prices):
+        total = 0
+        for price in prices:
+            total += price['Close']
+        return total / len(prices)
+
+    def calculate_signals(self, event):
+
+        if event.type == "MARKET":
+            short_term = self.bars.get_latest_bars(self.bars.symbol_list[0], 50)
+            long_term = self.bars.get_latest_bars(self.bars.symbol_list[0], 100)
+            short_avg = self._calculate_sma(short_term)
+            long_avg = self._calculate_sma(long_term)
+            if short_avg > long_avg:
+                if not self.long:
+                    signal = SignalEvent(long_term[-1]['Symbol'], long_term[-1]['Date'], 'LONG', 1)
+                    self.long = True
+                if self.short:
+                    signal = SignalEvent(long_term[-1]['Symbol'], long_term[-1]['Date'], 'EXIT')
+                    self.short = False
+                    self.long = False
+            else:
+                if not self.short:
+                    signal = SignalEvent(long_term[-1]['Symbol'], long_term[-1]['Date'], 'SHORT', 1)
+                    self.short = True
+                if self.long:
+                    signal = SignalEvent(long_term[-1]['Symbol'], long_term[-1]['Date'], 'EXIT')
+                    self.short = False
+                    self.long = False
