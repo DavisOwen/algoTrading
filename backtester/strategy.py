@@ -474,15 +474,19 @@ class MovingAverageCrossoverStrategy(Strategy):
                 if not self.long:
                     signal = SignalEvent(long_term[-1]['Symbol'], long_term[-1]['Date'], 'LONG', 1)
                     self.long = True
+                    self.events.put(signal)
                 if self.short:
                     signal = SignalEvent(long_term[-1]['Symbol'], long_term[-1]['Date'], 'EXIT')
                     self.short = False
                     self.long = False
+                    self.events.put(signal)
             else:
                 if not self.short:
                     signal = SignalEvent(long_term[-1]['Symbol'], long_term[-1]['Date'], 'SHORT', 1)
                     self.short = True
+                    self.events.put(signal)
                 if self.long:
                     signal = SignalEvent(long_term[-1]['Symbol'], long_term[-1]['Date'], 'EXIT')
                     self.short = False
                     self.long = False
+                    self.events.put(signal)
