@@ -1,3 +1,5 @@
+from .utils import EventType
+
 class Event(object):
     """
     Event is base class providing an interface for all subsequent
@@ -16,7 +18,7 @@ class MarketEvent(Event):
         """
         Initialises the MarketEvent.
         """
-        self.type = 'MARKET'
+        self.type = EventType.MARKET
 
 
 class SignalEvent(Event):
@@ -37,7 +39,7 @@ class SignalEvent(Event):
         :param strength: amount of ticker to order
         :type strength: float
         """
-        self.type = 'SIGNAL'
+        self.type = EventType.SIGNAL
         self.symbol = symbol
         self.datetime = datetime
         self.signal_type = signal_type
@@ -66,7 +68,7 @@ class OrderEvent(Event):
         :param direction: 'BUY' or 'SELL' for long or short.
         :type direction: str
         """
-        self.type = 'ORDER'
+        self.type = EventType.ORDER
         self.symbol = symbol
         self.order_type = order_type
         self.quantity = quantity
@@ -117,7 +119,7 @@ class FillEvent(Event):
         :type commission: float
         """
 
-        self.type = 'FILL'
+        self.type = EventType.FILL
         self.timeindex = timeindex
         self.symbol = symbol
         self.exchange = exchange

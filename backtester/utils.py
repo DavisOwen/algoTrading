@@ -1,11 +1,26 @@
+import os
 import requests
 from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.tsa.vector_ar.vecm as jh
 import statsmodels.tsa.stattools as ts
+import enum
+
+# Enums
+class PickleType(enum.Enum):
+    LOAD = 'LOAD'
+    DUMP = 'DUMP'
 
 
+class EventType(enum.Enum):
+    MARKET = 'MARKET'
+    SIGNAL = 'SIGNAL'
+    ORDER = 'ORDER'
+    FILL = 'FILL'
+
+
+# Functions
 def scrape_list():
 
     site = 'http://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
@@ -104,3 +119,7 @@ def dot(arr1, arr2):
     if len(arr1) != len(arr2):
         return 0
     return sum(i[0] * i[1] for i in zip(arr1, arr2))
+
+def check_dir_exists(directory):
+    if not os.path.exists(directory):
+        os.mkdir(directory)

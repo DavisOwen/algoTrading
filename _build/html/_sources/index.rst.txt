@@ -2,15 +2,9 @@ Welcome to algotrading's documentation!
 =======================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
 
-   data
-   event
-   execution
-   performance
-   portfolio
-   strategy
+   backtester/index
 
 Indices and tables
 ==================

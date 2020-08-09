@@ -32,97 +32,8 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="module-performance">
-<span id="performance"></span><h1>performance<a class="headerlink" href="#module-performance" title="Permalink to this headline">¶</a></h1>
-<dl class="class">
-<dt id="performance.PerformanceHandler">
-<em class="property">class </em><code class="sig-prename descclassname">performance.</code><code class="sig-name descname">PerformanceHandler</code><span class="sig-paren">(</span><em class="sig-param">results_dir</em><span class="sig-paren">)</span><a class="headerlink" href="#performance.PerformanceHandler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Object for saving and loading backtest results and log files.
-Includes functions to analyze results such as plot_equity_curve</p>
-<dl class="method">
-<dt id="performance.PerformanceHandler._create_drawdowns">
-<code class="sig-name descname">_create_drawdowns</code><span class="sig-paren">(</span><em class="sig-param">equity_curve</em><span class="sig-paren">)</span><a class="headerlink" href="#performance.PerformanceHandler._create_drawdowns" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate the largest peak-to-trough drawdown of the PnL curve
-as well as the duration of the drawdown. Requires that the
-pnl_returs is a pandas Series.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>equity_curve</strong> (<em>pd.Series</em>) – a pandas Series representing period percentage         returns.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>drawdown, duration - highest peak-to-trough drawdown and         duration</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float, float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="performance.PerformanceHandler._create_sharpe_ratio">
-<code class="sig-name descname">_create_sharpe_ratio</code><span class="sig-paren">(</span><em class="sig-param">returns</em>, <em class="sig-param">periods=252</em><span class="sig-paren">)</span><a class="headerlink" href="#performance.PerformanceHandler._create_sharpe_ratio" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create the Sharpe ratio for the strategy, based on a
-benchmark of zero (i.e. no risk-free rate information).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>returns</strong> (<em>pd.Series</em>) – a pandas Series representing period percentage returns</p></li>
-<li><p><strong>periods</strong> (<em>int</em>) – Daily (252), Hourly (252*6.5), Minutely(252*6.5*60) etc</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>sharpe ratio</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="performance.PerformanceHandler.construct_logger">
-<code class="sig-name descname">construct_logger</code><span class="sig-paren">(</span><em class="sig-param">logger_dir</em><span class="sig-paren">)</span><a class="headerlink" href="#performance.PerformanceHandler.construct_logger" title="Permalink to this definition">¶</a></dt>
-<dd><p>Constructs logger with file handler with backtest_number, stream
-handler, and formatter</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>logger_dir</strong> (<em>str</em>) – directory to store log file</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="performance.PerformanceHandler.load_results">
-<code class="sig-name descname">load_results</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#performance.PerformanceHandler.load_results" title="Permalink to this definition">¶</a></dt>
-<dd><p>loads result object and creates simply stream handler for logging</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="performance.PerformanceHandler.output_summary_stats">
-<code class="sig-name descname">output_summary_stats</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#performance.PerformanceHandler.output_summary_stats" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a list of summary statistics for the portfolio such
-as Sharpe Ratio and drawdown information.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="performance.PerformanceHandler.plot_equity_curve">
-<code class="sig-name descname">plot_equity_curve</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#performance.PerformanceHandler.plot_equity_curve" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plots the equity_curve using matplotlib.pyplot</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="performance.PerformanceHandler.save_results">
-<code class="sig-name descname">save_results</code><span class="sig-paren">(</span><em class="sig-param">results</em><span class="sig-paren">)</span><a class="headerlink" href="#performance.PerformanceHandler.save_results" title="Permalink to this definition">¶</a></dt>
-<dd><p>saves results to pickle file keyed based on backtest_number</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>results</strong> (<em>pd.Dataframe</em>) – results object to save</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
+  <div class="section" id="performance">
+<h1>performance<a class="headerlink" href="#performance" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
@@ -144,7 +55,6 @@ as Sharpe Ratio and drawdown information.</p>
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="data.html">data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="event.html">event</a></li>
 <li class="toctree-l1"><a class="reference internal" href="execution.html">execution</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">performance</a></li>

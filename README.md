@@ -1,25 +1,35 @@
-# algoTrading
+#algoTrading
 
-I've decided to make my own backtester. I'll simply be using venv as an environment.
+##SETUP:
 
-create env 
+1. **Create env**
 
 `python3 -m venv algotrading`
 
-activate env
+2. **Activate env**
 
 `source algotrading/bin/activate`
 
-install requirements
+3. **Install requirements**
 
 `pip install -r requirements.txt`
 
-Following the template for event driven backtester development outlined in this series
+##Sphinx:
+
+https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
+
+Sphinx autodocs will autogenerate documentation based on properly formatted comments. Look at current examples to get an idea of formatting
+
+To regenerate docs:
+
+1. make .rst file for any new modules 
+
+2. run 
+
+`make html`
+
+##Credits
+
+Follows the template for event driven backtester development outlined in this series
 
 https://www.quantstart.com/articles/Event-Driven-Backtesting-with-Python-Part-I
-
-Sphinx documentation:
-
-make .rst for any new modules and run make html to regenerate docs in _build/html/index.html.
-
-Will autogenerate documentation based on properly formatted comments.

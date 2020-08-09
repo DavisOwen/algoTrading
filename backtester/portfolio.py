@@ -4,7 +4,8 @@ import copy
 from abc import ABCMeta, abstractmethod
 from math import floor
 
-from event import OrderEvent
+from .event import OrderEvent
+from .utils import EventType
 
 
 class Portfolio(object):
@@ -238,7 +239,7 @@ class NaivePortfolio(Portfolio):
         :param event: FillEvent object to update positions and holdings
         :type event: FillEvent
         """
-        if event.type == 'FILL':
+        if event.type == EventType.FILL:
             self.update_positions_from_fill(event)
             self.update_holdings_from_fill(event)
 
@@ -284,7 +285,7 @@ class NaivePortfolio(Portfolio):
         :param event: SignalEvent object to update positions and holdings
         :type event: SignalEvent
         """
-        if event.type == 'SIGNAL':
+        if event.type == EventType.SIGNAL:
             order_event = self.generate_naive_order(event)
             self.events.put(order_event)
 

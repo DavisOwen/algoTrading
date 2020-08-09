@@ -1,4 +1,4 @@
-from utils import generate_hedge_ratio, dot, is_stationary
+from .utils import generate_hedge_ratio, dot, is_stationary, EventType
 import numpy as np
 import pandas as pd
 import sys
@@ -9,7 +9,7 @@ from pykalman import KalmanFilter
 
 from abc import ABCMeta, abstractmethod
 
-from event import SignalEvent
+from .event import SignalEvent
 
 logger = logging.getLogger("backtester")
 
@@ -86,7 +86,7 @@ class BuyAndHoldStrategy(Strategy):
         :param event: A MarketEvent object.
         :type event: MarketEvent
         """
-        if event.type == 'MARKET':
+        if event.type == EventType.MARKET:
             for s in self.symbol_list:
                 bar = self.bars.get_latest_bars(s, N=1)[0]
                 if bar is not None and bar != {}:
@@ -126,7 +126,7 @@ class KalmanPairTradeStrategy(Strategy):
                                               self.portfolio, self.leverage))
 
     def calculate_signals(self, event):
-        if event.type == 'MARKET':
+        if event.type == EventType.MARKET:
             for pair in self.pairs:
                 pair.calculate_signal()
 
@@ -408,7 +408,7 @@ class BollingerBandJohansenStrategy(Strategy):
         :param event: Event object
         :type event: Event
         """
-        if event.type == "MARKET":
+        if event.type == EventType.MARKET:
             price = self._current_portfolio_price('Close')
             self.portfolio_prices.append(price)
             if is_stationary(self.portfolio_prices):
@@ -465,7 +465,7 @@ class MovingAverageCrossoverStrategy(Strategy):
 
     def calculate_signals(self, event):
 
-        if event.type == "MARKET":
+        if event.type == EventType.MARKET:
             short_term = self.bars.get_latest_bars(self.bars.symbol_list[0], 50)
             long_term = self.bars.get_latest_bars(self.bars.symbol_list[0], 100)
             short_avg = self._calculate_sma(short_term)

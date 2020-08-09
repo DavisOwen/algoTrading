@@ -1,15 +1,11 @@
 import os
 import logging
 from queue import Empty
-from performance import PerformanceHandler
+from .performance import PerformanceHandler
+from .utils import EventType
 
-logger_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                          "logs")
-results_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                           "results")
 # Logging and performance objects
-performance = PerformanceHandler(results_dir)
-performance.construct_logger(logger_dir)
+performance = PerformanceHandler()
 logger = logging.getLogger("backtester")
 
 
@@ -41,15 +37,15 @@ class Backtester(object):
                     break
                 else:
                     if event is not None:
-                        if event.type == 'MARKET':
+                        if event.type == EventType.MARKET:
                             self.strategy.calculate_signals(event)
                             self.port.update_timeindex(event)
-                        elif event.type == 'SIGNAL':
+                        elif event.type == EventType.SIGNAL:
                             self.port.update_signal(event)
-                        elif event.type == 'ORDER':
+                        elif event.type == EventType.ORDER:
                             logger.info(event)
                             self.broker.execute_order(event)
-                        elif event.type == 'FILL':
+                        elif event.type == EventType.FILL:
                             logger.info(event)
                             self.port.update_fill(event)
 

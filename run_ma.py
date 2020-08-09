@@ -2,11 +2,11 @@
 
 import datetime
 from queue import Queue
-from data import QuandlAPIDataHandler
-from strategy import MovingAverageCrossoverStrategy
-from portfolio import NaivePortfolio
-from execution import SimulatedExecutionHandler
-from backtester import Backtester
+from backtester.data import QuandlAPIDataHandler
+from backtester.strategy import MovingAverageCrossoverStrategy
+from backtester.portfolio import NaivePortfolio
+from backtester.execution import SimulatedExecutionHandler
+from backtester.backtester import Backtester
 
 # Paramters
 events = Queue()

@@ -7,7 +7,8 @@ from abc import ABCMeta, abstractmethod
 # from ib.ext.Order import Order
 # from ib.opt import ibConnection
 
-from event import FillEvent
+from .event import FillEvent
+from .utils import EventType
 
 
 class ExecutionHandler(object):
@@ -66,7 +67,7 @@ class SimulatedExecutionHandler(ExecutionHandler):
         :param event: Contains an Event object with order information.
         :type event: Event
         """
-        if event.type == 'ORDER':
+        if event.type == EventType.ORDER:
             bar = self.bars.get_latest_bars(event.symbol)[0]
             fill_cost = bar['Close']
             date = bar['Date']

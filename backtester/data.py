@@ -5,15 +5,16 @@ import pickle
 import logging
 import quandl
 import pandas as pd
-from utils import scrape_list, listify
+from .utils import scrape_list, listify, check_dir_exists
 
 from abc import ABCMeta, abstractmethod
 
-from event import MarketEvent
+from .event import MarketEvent
 
 
 pickle_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                           "pickle_files")
+check_dir_exists(pickle_dir)
 
 logger = logging.getLogger("backtester")
 quandl.ApiConfig.api_key = 'AfS6bPzj1CsRFyYxCcvz'

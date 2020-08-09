@@ -6,9 +6,15 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from pandas.plotting import register_matplotlib_converters
-
+from .utils import check_dir_exists, PickleType
 
 register_matplotlib_converters()
+logger_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                          "logs")
+results_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                           "results")
+check_dir_exists(logger_dir)
+check_dir_exists(results_dir)
 logger = logging.getLogger("backtester")
 
 
@@ -17,46 +23,44 @@ class PerformanceHandler(object):
     Object for saving and loading backtest results and log files.
     Includes functions to analyze results such as plot_equity_curve
     """
-    def __init__(self, results_dir):
+    def __init__(self):
         """
         Initializes PerformanceHandler. Loads current backtest number or
         creates new backtest number starting from 0. Sets results directory
-
-        :param results_dir: Directory to store and load backtest results
-        :type results_dir: str
         """
         try:
-            self.backtest_number = pickle.load(
-                open("backtest_number.pickle", 'rb'))
+            self._pickle_backtest_number(PickleType.LOAD)
         except FileNotFoundError:
             self.backtest_number = 0
-            pickle.dump(
-                self.backtest_number,
-                open("backtest_number.pickle", 'wb'))
-        self.results_dir = results_dir
+            self._pickle_backtest_number(PickleType.DUMP)
+        self._construct_logger()
 
-    def construct_logger(self, logger_dir):
+    def _construct_logger(self):
         """
         Constructs logger with file handler with backtest_number, stream
         handler, and formatter
-
-        :param logger_dir: directory to store log file
-        :type logger_dir: str
         """
         self.backtest_number += 1
-        pickle.dump(
-            self.backtest_number,
-            open("backtest_number.pickle", 'wb'))
+        self._pickle_backtest_number(PickleType.DUMP)
         logger.setLevel(logging.DEBUG)
         formatter = logging.Formatter("{asctime} {levelname} {message}",
                                       style='{')
         ch = logging.StreamHandler()
         ch.setFormatter(formatter)
-        file = logging.FileHandler(os.path.join(
+        log_file = logging.FileHandler(os.path.join(
             logger_dir, "backtest_{num}.log".format(num=self.backtest_number)))
-        file.setFormatter(formatter)
+        log_file.setFormatter(formatter)
         logger.addHandler(ch)
-        logger.addHandler(file)
+        logger.addHandler(log_file)
+
+    def _pickle_backtest_number(self, pickle_type):
+        if pickle_type == PickleType.DUMP:
+            pickle.dump(
+                self.backtest_number,
+                open(os.path.join(logger_dir, "backtest_number.pickle"), 'wb'))
+        elif pickle_type == PickleType.LOAD:
+            self.backtest_number = pickle.load(
+                open(os.path.join(logger_dir, "backtest_number.pickle"), 'rb'))
 
     def save_results(self, results):
         """
@@ -65,7 +69,7 @@ class PerformanceHandler(object):
         :type results: pd.Dataframe """
         self.results = results
         pickle.dump(self.results, open(os.path.join(
-            self.results_dir,
+            results_dir,
             "backtest_{num}.pickle".format(num=self.backtest_number)), 'wb'))
 
     def load_results(self):
@@ -77,16 +81,14 @@ class PerformanceHandler(object):
         logger.addHandler(ch)
         try:
             self.results = pickle.load(open(
-                os.path.join(self.results_dir, "backtest_{num}.pickle".format(
+                os.path.join(results_dir, "backtest_{num}.pickle".format(
                     num=self.backtest_number)), 'rb'))
         except FileNotFoundError:
             self.backtest_number -= 1
             if self.backtest_number == 0:
                 logger.error("no backtest files found!")
                 sys.exit(0)
-            pickle.dump(
-                self.backtest_number,
-                open("backtest_number.pickle", 'wb'))
+            self._pickle_backtest_number(PickleType.DUMP)
             self.load_results()
 
     def output_summary_stats(self):
