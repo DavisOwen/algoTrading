@@ -1,6 +1,6 @@
-#algoTrading
+# algoTrading
 
-##SETUP:
+## SETUP:
 
 1. **Create env**
 
@@ -14,7 +14,7 @@
 
 `pip install -r requirements.txt`
 
-##Sphinx:
+## Sphinx:
 
 https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
 
@@ -28,7 +28,7 @@ To regenerate docs:
 
 `make html`
 
-##Credits
+## Credits
 
 Follows the template for event driven backtester development outlined in this series
 
