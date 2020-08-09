@@ -24,9 +24,7 @@ To regenerate docs:
 
 1. make .rst file for any new modules 
 
-2. run 
-
-`make html`
+2. run `make html`
 
 ## Credits
 
