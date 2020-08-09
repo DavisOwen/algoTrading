@@ -159,12 +159,17 @@ class PerformanceHandler(object):
     def plot_equity_curve(self):
         """
         Plots the equity_curve using matplotlib.pyplot
+        Green dots represent points of buying, red
+        represents points of selling
         """
         holdings = self.results['holdings']
         positions = self.results['positions']
         returns = holdings['equity_curve']
-        fills = positions.diff()[
-            positions.diff() != 0].dropna(how='all').index.values
+        longs = positions.diff()[
+            positions.diff() > 0].dropna(how='all').index.values
+        shorts = positions.diff()[
+            positions.diff() < 0].dropna(how='all').index.values
         plt.plot(returns)
-        plt.scatter(fills, returns[returns.index.isin(fills)], c='red')
+        plt.scatter(longs, returns[returns.index.isin(longs)], c='green')
+        plt.scatter(shorts, returns[returns.index.isin(shorts)], c='red')
         plt.show()
