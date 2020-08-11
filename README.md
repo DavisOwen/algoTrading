@@ -14,6 +14,12 @@
 
 `pip install -r requirements.txt`
 
+4. **Download benchmark data**
+
+https://www.wsj.com/market-data/quotes/index/SPX/historical-prices
+
+Download csv data here with largest time frame, rename file to SP500.csv, and place in backtester/ folder
+
 ## Sphinx:
 
 https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html

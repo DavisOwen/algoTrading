@@ -5,6 +5,7 @@ import logging
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import csv
 from pandas.plotting import register_matplotlib_converters
 from .utils import check_dir_exists, PickleType
 
@@ -34,6 +35,21 @@ class PerformanceHandler(object):
             self.backtest_number = 0
             self._pickle_backtest_number(PickleType.DUMP)
         self._construct_logger()
+
+    def _create_benchmark_data(self, returns):
+        """
+        Creates benchmark equity curve to compare with
+        returns. Will need custom data provided.
+        https://www.wsj.com/market-data/quotes/index/SPX/historical-prices
+        """
+        benchmark = pd.read_csv('SP500.csv')
+        benchmark.set_index('Date', inplace=True)
+        benchmark_returns = benchmark[' Close'].pct_change()
+        benchmark_equity_curve = (1.0+benchmark_returns).cumprod()
+        benchmark_equity_curve = benchmark_equity_curve.reindex(pd.to_datetime(benchmark_equity_curve.index))
+        benchmark_equity_curve = benchmark_equity_curve.iloc[::-1]
+        benchmark_equity_curve = benchmark_equity_curve[returns.index[0]:returns.index[-1]]
+        return benchmark_equity_curve
 
     def _construct_logger(self):
         """
@@ -165,11 +181,13 @@ class PerformanceHandler(object):
         holdings = self.results['holdings']
         positions = self.results['positions']
         returns = holdings['equity_curve']
+        benchmark_equity_curve = self._create_benchmark_data(returns)
         longs = positions.diff()[
             positions.diff() > 0].dropna(how='all').index.values
         shorts = positions.diff()[
             positions.diff() < 0].dropna(how='all').index.values
         plt.plot(returns)
+        plt.plot(benchmark_equity_curve)
         plt.scatter(longs, returns[returns.index.isin(longs)], c='green')
         plt.scatter(shorts, returns[returns.index.isin(shorts)], c='red')
         plt.show()
