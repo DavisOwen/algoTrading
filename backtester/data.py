@@ -421,6 +421,7 @@ class QuandlAPIDataHandler(DataHandler):
                     bar = next(self.get_new_bars[s])
                 except StopIteration:
                     self.continue_backtest = False
+                    break
                 else:
                     if bar is not None:
                         if bar['Date'] >= self.test_date:
