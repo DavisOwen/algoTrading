@@ -298,7 +298,7 @@ class QuandlAPIDataHandler(DataHandler):
         and split events)
         :rtype: dict
         """
-        for index, row in self.symbol_data[symbol][self.test_date:].iterrows():
+        for index, row in self.symbol_data[symbol].iterrows():
             yield {'Symbol': symbol, 'Date': index, 'Open': row['Open'],
                    'Low': row['Low'], 'High': row['High'],
                    'Close': row['Close'], 'Volume': row['Volume'],
@@ -416,15 +416,19 @@ class QuandlAPIDataHandler(DataHandler):
 
     def update_new_bars(self):
         for s in self.symbol_list:
-            try:
-                bar = next(self.get_new_bars[s])
-            except StopIteration:
-                self.continue_backtest = False
-            else:
-                if bar is not None:
-                    if self.adjust:
-                        self._adjust_data_test(bar)
-                    self.latest_symbol_data[s].append(bar)
+            while True:
+                try:
+                    bar = next(self.get_new_bars[s])
+                except StopIteration:
+                    self.continue_backtest = False
+                else:
+                    if bar is not None:
+                        if bar['Date'] >= self.test_date:
+                            self.latest_symbol_data[s].append(bar)
+                            break
+                        if self.adjust:
+                            self._adjust_data_test(bar)
+                        self.latest_symbol_data[s].append(bar)
 
     def update_bars(self):
         """
