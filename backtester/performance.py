@@ -14,6 +14,8 @@ logger_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                           "logs")
 results_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                            "results")
+benchmark_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                              "SP500.csv")
 check_dir_exists(logger_dir)
 check_dir_exists(results_dir)
 logger = logging.getLogger("backtester")
@@ -42,7 +44,7 @@ class PerformanceHandler(object):
         returns. Will need custom data provided.
         https://www.wsj.com/market-data/quotes/index/SPX/historical-prices
         """
-        benchmark = pd.read_csv('SP500.csv')
+        benchmark = pd.read_csv(benchmark_file)
         benchmark.set_index('Date', inplace=True)
         benchmark_returns = benchmark[' Close'].pct_change()
         benchmark_equity_curve = (1.0+benchmark_returns).cumprod()
