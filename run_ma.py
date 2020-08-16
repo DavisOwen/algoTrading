@@ -10,8 +10,8 @@ from backtester.backtester import Backtester
 
 # Paramters
 events = Queue()
-symbol_list = ["AMZN"]
-start_date = datetime.datetime(2017, 1, 2)
+symbol_list = ["GE"]
+start_date = datetime.datetime(2000, 1, 2)
 
 # Objects
 bars = QuandlAPIDataHandler(events, symbol_list, start_date, False)
