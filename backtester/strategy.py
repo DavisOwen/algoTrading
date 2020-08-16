@@ -463,8 +463,50 @@ class MovingAverageCrossoverStrategy(Strategy):
             total += price['Close']
         return total / len(prices)
 
-    def calculate_signals(self, event):
+    def _calculate_wma(self, prices):
+        sum = 0
+        n = 50
+        denominator = (n * (n + 1)) / 2
+        for price in prices:
+            sum += price['Close'] * n
+            n = n - 1
+        wma = sum / denominator
+        return wma
 
+    def _calculate_ema(self, prices):
+        ## is sma prices represenative of the prices of the last ten days
+        ## before the the first day of prices?
+        sma_prices = self.bars.get_latest_bars(self.bars.symbol_list[0], 20)
+        ema_yes = self._calculate_sma(sma_prices[0:10]) 
+        multiplier = 2 / (len(prices) + 1)
+        for price in prices:
+            ema_tod = price['Close'] * multiplier + ema_yes * (1 - multiplier)
+            ema_yes = ema_tod
+        return ema_tod
+
+    def _stochastic_osc(self, prices):
+        ## Is there a better way to access the prices['Close] of the last index in prices list?
+        ## Instead of using recent_prices AND c. 
+        c = prices[-1]['Close']
+        seq = [price['Close'] for price in prices[1:14]]
+        low_price = min(seq)
+        high_price = max(seq)
+        k = ((c - low_price) / (high_price - low_price)) * 100
+        return k   
+
+    def _calculate_macd(self):
+       ## should prices_one and prices_two be parameters instead?
+       ## A twleve period EMA and twentysix period EMA are generally
+       ## standard in calulation of MACD 
+        prices_one = self.bars.get_latest_bars(self.bars.symbol_list[0], 12)
+        prices_two = self.bars.get_latest_bars(self.bars.symbol_list[0], 26)
+        twelve_period_ema = self._calculate_ema(prices_one)
+        twentySix_period_ema = self._calculate_ema(prices_two)
+        macd = twelve_period_ema - twentySix_period_ema
+        return macd
+
+    def calculate_signals(self, event):
+        ## For calculation of stop loss, price today is needed. How do access that price?
         if event.type == EventType.MARKET:
             short_term = self.bars.get_latest_bars(self.bars.symbol_list[0], 50)
             long_term = self.bars.get_latest_bars(self.bars.symbol_list[0], 100)
