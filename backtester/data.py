@@ -220,7 +220,10 @@ class QuandlAPIDataHandler(DataHandler):
                                                          'rb'))
             except FileNotFoundError:
                 logger.info("File not found! Running download_quandl_ticker()")
-                self.symbol_data[sec] = self._download_quandl_ticker(sec)
+                data = self._download_quandl_ticker(sec)
+                if data.empty:
+                    sys.exit(0)
+                self.symbol_data[sec] = data
             self.latest_symbol_data[sec] = []
 
     def sort_oldest(self):
@@ -240,9 +243,10 @@ class QuandlAPIDataHandler(DataHandler):
                                 "{sec}.pickle".format(sec=ticker)),
                                    'rb'))
             except FileNotFoundError:
-                pass
-            else:
-                date_dict[ticker] = sec.index[0]
+                sec = self._download_quandl_ticker(ticker)
+                if sec.empty:
+                    continue
+            date_dict[ticker] = sec.index[0]
         return [x[0] for x in sorted(date_dict.items(),
                                      key=operator.itemgetter(1))]
 
@@ -265,10 +269,15 @@ class QuandlAPIDataHandler(DataHandler):
         :rtype: pd.Dataframe
         """
         logger.info("Downloading {sec}".format(sec=sec))
-        data = quandl.get("WIKI/{sec}".format(sec=sec))
-        pickle.dump(data, open(os.path.join(
-            pickle_dir, "{sec}.pickle".format(sec=sec)), 'wb'))
-        return data
+        try:
+            data = quandl.get("WIKI/{sec}".format(sec=sec))
+        except Exception as ex:
+            logger.error("Error downloading security: {sec}. Exception: {ex}".format(sec=sec, ex=ex))
+            return pd.DataFrame()
+        else:
+            pickle.dump(data, open(os.path.join(
+                pickle_dir, "{sec}.pickle".format(sec=sec)), 'wb'))
+            return data
 
     def _get_new_bars_dict(self):
         """
